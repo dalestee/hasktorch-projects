@@ -20,38 +20,48 @@ import Data.List.Split (splitOn)
 -- date,daily_mean_temperature
 -- 2023/4/1,16.0
 
-parseData :: FilePath -> [(Float)]
-parseData filePath = map parseLine $ tail $ lines $ unsafePerformIO $ readFile filePath
-  where
-    parseLine :: String -> Float
-    parseLine line = read $ last $ splitOn "," line
+-- takes 7 last days and predict the temperature of the next day
+parseData :: FilePath -> [([Float],Float)]
+parseData path = unsafePerformIO $ do
+    content <- readFile path
+    let temps = map (read . last . splitOn ",") $ tail $ lines content
+    return [(take 7 (drop i temps), temps !! (i+7)) | i <- [0..(length temps - 8)]]
 
-trainingData :: [(Float)]
+-- temperature of the 7 last days to predict the temperature of the next day
+trainingData :: [([Float],Float)]
 trainingData = parseData "data/train.csv"
 
-testData :: [(Float)]
+testData :: [([Float],Float)]
 testData = parseData "data/valid.csv"
+
+createModel :: Device -> LinearHypParams
+createModel device = LinearHypParams device True 7 1
 
 main :: IO()
 main = do
     -- parse training data and print the first 5
     -- print $ take 5 (parseData "data/valid.csv")
     -- print $ take 5 (parseData "data/train.csv")
-    let iter = 100::Int
-        device = Device CPU 0
-    initModel <- sample $ LinearHypParams device True 1 1
-    ((trainedModel,_),losses) <- mapAccumM [1..iter] (initModel,GD) $ \epoc (model,opt) -> do
-        let batchLoss = foldLoop trainingData zeroTensor $ \input loss ->
-                            let y' = linearLayer model $ asTensor'' device [input]
-                                y = asTensor'' device [input]
+    model <- initModel
+    ((trainedModel,_),losses) <- mapAccumM [1..numIters] (model,optimizer) $ \epoc (model,opt) -> do
+        let batchLoss = foldLoop trainingData zeroTensor $ \(input,output) loss ->
+                            let y' = linearLayer model $ asTensor'' device input
+                                y = asTensor'' device output
                             in add loss $ mseLoss y y'
             lossValue = (asValue batchLoss)::Float
         showLoss 1 epoc lossValue
-        u <- update model opt batchLoss 10e-7
-        return (u, lossValue)
+        u <- update model opt batchLoss 9e-11  
+        let (updatedModel, updatedOptimizer) = u
+        return ((updatedModel, updatedOptimizer), lossValue)
     saveParams trainedModel "regression.model"
-
     drawLearningCurve "graph-reg.png" "Learning Curve" [("",reverse losses)]
 
-    loadedModel <- loadParams (LinearHypParams device True 1 1) "regression.model"
-    print loadedModel
+
+    where
+    -- batchSize = 1
+    optimizer = GD
+    numIters = 200
+    -- numFeatures = 3
+    device = Device CPU 0
+    initModel = sample $ createModel device
+    
