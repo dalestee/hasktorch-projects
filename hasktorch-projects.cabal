@@ -26,17 +26,21 @@ source-repository head
 library
   exposed-modules:
       Lib
+      Titanic
   other-modules:
       Paths_hasktorch_projects
   autogen-modules:
       Paths_hasktorch_projects
   hs-source-dirs:
       src
+      src/titanic-mlp
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
     , hasktorch
     , hasktorch-tools
+    , nlp-tools
+    , split
   default-language: Haskell2010
 
 executable hasktorch-projects-exe
@@ -53,6 +57,8 @@ executable hasktorch-projects-exe
     , hasktorch
     , hasktorch-projects
     , hasktorch-tools
+    , nlp-tools
+    , split
   default-language: Haskell2010
 
 test-suite hasktorch-projects-test
@@ -70,4 +76,6 @@ test-suite hasktorch-projects-test
     , hasktorch
     , hasktorch-projects
     , hasktorch-tools
+    , nlp-tools
+    , split
   default-language: Haskell2010
