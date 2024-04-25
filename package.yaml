@@ -40,8 +40,10 @@ library:
 
 executables:
   hasktorch-projects-exe:
-    main:                Main.hs
-    source-dirs:         app
+    main: Main.hs
+    source-dirs:         
+    - app
+
     ghc-options:
     - -threaded
     - -rtsopts

@@ -1,6 +1,6 @@
 module Main (main) where
 
-import Lib
+import Titanic
 
 main :: IO ()
-main = someFunc
+main = titanic
