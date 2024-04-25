@@ -23,6 +23,8 @@ dependencies:
 - base >= 4.7 && < 5
 - hasktorch
 - hasktorch-tools
+- nlp-tools
+- split
 
 ghc-options:
 - -Wall
@@ -36,12 +38,16 @@ ghc-options:
 - -Wredundant-constraints
 
 library:
-  source-dirs: src
+  source-dirs: 
+    - src
+    - src/titanic-mlp
 
 executables:
   hasktorch-projects-exe:
-    main:                Main.hs
-    source-dirs:         app
+    main: Main.hs
+    source-dirs:         
+    - app
+
     ghc-options:
     - -threaded
     - -rtsopts

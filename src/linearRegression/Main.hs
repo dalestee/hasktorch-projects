@@ -11,7 +11,7 @@ import Torch.Tensor.TensorFactories (asTensor'')
 import Torch.Train      (update,showLoss,zeroTensor,saveParams,loadParams)
 import Torch.Control    (mapAccumM,foldLoop)
 import Torch.Layer.Linear (LinearHypParams(..),linearLayer)
-import ML.Exp.Chart (drawLearningCurve) --nlp-tools
+-- import ML.Exp.Chart (drawLearningCurve) --nlp-tools
 import Control.Monad (when,liftM)
 
 trainingData :: [([Float],Float)]
@@ -37,11 +37,11 @@ main = do
         let (updatedModel, updatedOptimizer) = u
         return ((updatedModel, updatedOptimizer), lossValue)
     saveParams trainedModel "regression.model"
-    drawLearningCurve "graph-reg.png" "Learning Curve" [("",reverse losses)]
-
+--    drawLearningCurve "graph-reg.png" "Learning Curve" [("",reverse losses)]
 
     where
     batchSize = 4
+    learningRate = 1e-1
     optimizer = GD
     numIters = 200
     numFeatures = 3
