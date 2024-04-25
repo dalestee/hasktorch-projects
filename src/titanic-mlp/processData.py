@@ -99,12 +99,12 @@ def changeEmbarkedIntoNumeric(input_path):
         writer.writerow(next(reader))
 
         for row in reader:
-            if row[8] == 'C':
-                row[8] = 1
-            elif row[8] == 'Q':
-                row[8] = 2
+            if row[7] == 'C':
+                row[7] = 1
+            elif row[7] == 'Q':
+                row[7] = 2
             else:
-                row[8] = 3
+                row[7] = 3
             writer.writerow(row)
 
 def normalize_csv(input_path):
@@ -139,7 +139,33 @@ def normalize_csv(input_path):
         writer = csv.writer(output_file)
         writer.writerows(normalized_data)
 
+import csv
+
+def fix_csv(filename):
+    with open(filename, 'r') as infile:
+        reader = csv.reader(infile)
+        header = next(reader)
+        data = list(reader)
+
+    pid_index = header.index('PassengerId')
+
+    for i, row in enumerate(data, start=892):
+        row[pid_index] = i
+
+    with open(filename, 'w', newline='') as outfile:
+        writer = csv.writer(outfile)
+        writer.writerow(header)
+        writer.writerows(data)
+
 if __name__ == "__main__":
-    input_path = sys.argv[1]
-    removeCol(input_path, 0)
+
+    fix_csv('data/test-mod.csv')
+    # fill_missing_values("data/test.csv")
+    # removeCol("data/test"+"-filled.csv", 9)
+    # removeCol("data/test"+"-filled-rmv.csv", 2)
+    # removeCol("data/test"+"-filled-rmv-rmv.csv", 6)
+    # changeSexIntoBinary("data/test"+"-filled-rmv-rmv-rmv.csv")
+    # changeEmbarkedIntoNumeric("data/test"+"-filled-rmv-rmv-rmv-sex.csv")
+    # normalize_csv("data/test"+"-filled-rmv-rmv-rmv-sex-embarked.csv")
+
 
