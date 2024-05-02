@@ -68,7 +68,7 @@ titanic = do
         return (newState, newOpt, losses ++ [asValue epochLoss :: Float])
 
     let filename = "src/titanic-mlp/curves/graph-titanic-mse" ++ show (last losses) ++ ".png"
-    let modelName = "src/titanic-mlp/model-titanic-" ++ show (last losses) ++ ".pt"
+    let modelName = "src/titanic-mlp/models/model-titanic-" ++ show (last losses) ++ ".pt"
     drawLearningCurve filename "Learning Curve" [("", losses)]
     saveParams trained modelName
 
@@ -81,14 +81,14 @@ titanic = do
     putStrLn $ "Success rate on training data: " ++ show successRate
 
     let testData = parseDataTest
-    print $ Prelude.take 5 testData
+    -- test 1 output
     let outputs = map (\(input, passengerId) -> (passengerId, mlpLayer model (asTensor input))) testData
     let outputs' = map (\(passengerId, output) -> (passengerId, if (asValue output :: Float) > 0.5 then 1 else 0)) outputs
     writeFile "src/titanic-mlp/data/submission.csv" $ arrayToCSV outputs'
     return ()
 
     where
-        numIters = 500
+        numIters = 60
         lr = 0.0001
         opt = GD
         trainingData = parseDataTrain
