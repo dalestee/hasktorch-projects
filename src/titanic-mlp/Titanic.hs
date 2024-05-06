@@ -16,7 +16,7 @@ import Data.List()
 import Torch.Tensor         (Tensor, asTensor, asValue)
 import Torch.Functional     (mseLoss)
 import Torch.NN             (sample, flattenParameters)
-import Torch.Optim          (Adam(..), foldLoop, mkAdam)
+import Torch.Optim          (Adam(..), foldLoop, mkAdam, GD(..))
 import Torch.Device         (Device(..),DeviceType(..))
 import Torch.Train          (update, saveParams, loadParams)
 import Torch.Layer.MLP (MLPHypParams(..), ActName(..), mlpLayer, MLPParams)
@@ -58,6 +58,7 @@ titanic = do
     init <- sample hyperParams
     -- init <- loadParams hyperParams "src/titanic-mlp/model-titanic.pt"
     let opt = mkAdam itr beta1 beta2 (flattenParameters init)
+    -- let opt = GD
     (trained, _, losses) <- foldLoop (init, opt, []) numIters $ \(model, optimizer, losses) i -> do
         let epochLoss = sum (map (loss model) trainingData)
         when (i `mod` 1 == 0) $ do
@@ -94,14 +95,14 @@ titanic = do
     return ()
 
     where
-        numIters = 25
+        numIters = 30
         device = Device CPU 0
         hyperParams = MLPHypParams device 7 [(21, Relu), (1, Id)]
         -- betas are decaying factors Float, m's are the first and second moments [Tensor] and iter is the iteration number Int
         itr = 0
         beta1 = 0.9
         beta2 = 0.999
-        lr = 1e-2
+        lr = 1e-3
         trainingData = parseDataTrain
 
 --------------------------------------------------------------------------------
