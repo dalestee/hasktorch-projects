@@ -1,8 +1,7 @@
-# hasktorch-projects
+# Hasktorch Projects
 
-## setup
-
-change the torch paths in `stack.yaml` to the correct paths on your system.
+## Setup
+- Change the torch paths in `stack.yaml` to the correct paths on your system.
 
 then run:
 ```bash
@@ -11,21 +10,23 @@ stack run main
 
 ## Titanic
 
-### titanic dataset: https://www.kaggle.com/c/titanic/data
+### Titanic Dataset
+- You can find the Titanic dataset [here](https://www.kaggle.com/c/titanic/data).
 
-### learning curve:
+### Learning Curves
+- **GD Optimizer:**
+  ![Titanic Learning Curve with GD Optimizer](/app/titanic-mlp/curves/graph-titanic-mse210.8436_GD.png)
 
-GD optimizer
-- ![titanic learning curve](/app/titanic-mlp/curves/graph-titanic-mse210.8436_GD.png)
+- **Adam Optimizer:**
+  ![Titanic Learning Curve with Adam Optimizer](/app/titanic-mlp/curves/graph-titanic-mse129.70596_Adam.png)
 
-Adam optimizer
-- ![titanic learning curve](/app/titanic-mlp/curves/graph-titanic-mse129.70596_Adam.png)
+### Accuracy
+- **GD Optimizer:**
+  - Kaggle Validation Set: 0.62200
+  - Training Set: 0.61616
 
-### accuracy: 
-GD optimizer:
-- 0.62200 on kaggle validation set
-- 0.61616 on training set
+- **Adam Optimizer:**
+  - Kaggle Validation Set: 0.74641
+  - Training Set: 0.79904
 
-Adam optimizer:
-- 0.74641 on kaggle validation set
-- 0.79904 on training set
+
