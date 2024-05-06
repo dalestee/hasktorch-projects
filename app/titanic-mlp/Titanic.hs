@@ -86,7 +86,7 @@ titanic = do
     let outputsTrain = map (\(input, passengerId) -> (passengerId, mlpLayer model (asTensor input))) validationData
     let outputsTrain' = map (\(passengerId, output) -> (passengerId, if (asValue output :: Float) > 0.5 then 1 else 0)) outputsTrain
     let successRate = fromIntegral (length (filter (uncurry (==)) outputsTrain')) / fromIntegral (length outputsTrain')
-    putStrLn $ "Success rate on training data: " ++ show successRate
+    putStrLn $ "Success rate on validation data: " ++ show successRate
 
     let testData = parseDataTest
     -- test 1 output
