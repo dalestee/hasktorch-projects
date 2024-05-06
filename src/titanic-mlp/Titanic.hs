@@ -64,12 +64,18 @@ titanic = do
             print i
             print epochLoss
         (newState, newOpt) <- update model optimizer epochLoss lr
-        return (newState, newOpt, losses)
-        -- return (newState, newOpt, losses ++ [asValue epochLoss :: Float])
+        -- return (newState, newOpt, losses :: [Float]) -- without the losses curve
+        return (newState, newOpt, losses ++ [asValue epochLoss :: Float]) -- with the losses curve
 
-    let filename = "src/titanic-mlp/curves/graph-titanic-mse" ++ show (0) ++ ".png"
-    let modelName = "src/titanic-mlp/models/model-titanic-" ++ show (0) ++ ".pt"
-    -- drawLearningCurve filename "Learning Curve" [("", losses)]
+    let maybeLastLoss = if null losses then Nothing else Just (last losses)
+    case maybeLastLoss of
+        Nothing -> return ()
+        Just lastLoss -> do
+            let filename = "src/titanic-mlp/curves/graph-titanic-mse" ++ show lastLoss ++ ".png"
+            drawLearningCurve filename "Learning Curve" [("", losses)]
+
+    let modelName = "src/titanic-mlp/models/model-titanic-" ++
+                    (if null losses then "noLosses" else show (last losses)) ++ ".pt"
     saveParams trained modelName
 
     model <- loadParams hyperParams modelName
@@ -88,7 +94,7 @@ titanic = do
     return ()
 
     where
-        numIters = 200
+        numIters = 380
         device = Device CPU 0
         hyperParams = MLPHypParams device 7 [(21, Relu), (1, Id)]
         -- betas are decaying factors Float, m's are the first and second moments [Tensor] and iter is the iteration number Int
