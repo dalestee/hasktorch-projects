@@ -94,14 +94,14 @@ titanic = do
     return ()
 
     where
-        numIters = 380
+        numIters = 25
         device = Device CPU 0
         hyperParams = MLPHypParams device 7 [(21, Relu), (1, Id)]
         -- betas are decaying factors Float, m's are the first and second moments [Tensor] and iter is the iteration number Int
         itr = 0
         beta1 = 0.9
         beta2 = 0.999
-        lr = 1e-1
+        lr = 1e-2
         trainingData = parseDataTrain
 
 --------------------------------------------------------------------------------
