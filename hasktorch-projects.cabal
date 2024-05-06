@@ -33,7 +33,7 @@ library
       Paths_hasktorch_projects
   hs-source-dirs:
       src
-      src/titanic-mlp
+      app/titanic-mlp
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5

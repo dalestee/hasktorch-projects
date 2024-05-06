@@ -33,7 +33,7 @@ import ML.Exp.Chart (drawLearningCurve) --nlp-tools
 -- Survived,Pclass,Sex,Age,SibSp,Parch,Fare,Embarked
 parseDataTrain :: [([Float], Float)]
 parseDataTrain = unsafePerformIO $ do
-    content <- readFile "src/titanic-mlp/data/train-mod.csv"
+    content <- readFile "app/titanic-mlp/data/train-mod.csv"
     let lines' = tail $ lines content
     return $ map (\line -> let fields = splitOn "," line in
         ([read (fields !! 1), read (fields !! 2), read (fields !! 3), read (fields !! 4), read (fields !! 5), read (fields !! 6), read (fields !! 7)], read (fields !! 0))) lines'
@@ -41,7 +41,7 @@ parseDataTrain = unsafePerformIO $ do
 -- Pclass,Sex,Age,SibSp,Parch,Fare,Embarked
 parseDataTest :: [([Float], Int)]
 parseDataTest = unsafePerformIO $ do
-    content <- readFile "src/titanic-mlp/data/test-mod.csv"
+    content <- readFile "app/titanic-mlp/data/test-mod.csv"
     let lines' = tail $ lines content
     return $ map (\line -> let fields = splitOn "," line in
         ([read (fields !! 1), read (fields !! 2), read (fields !! 3), read (fields !! 4), read (fields !! 5), read (fields !! 6), read (fields !! 7)], read (fields !! 0))) lines'
@@ -56,7 +56,7 @@ arrayToCSV = unlines . map (\(a, b) -> show a ++ "," ++ show b)
 titanic :: IO ()
 titanic = do
     init <- sample hyperParams
-    -- init <- loadParams hyperParams "src/titanic-mlp/model-titanic.pt"
+    -- init <- loadParams hyperParams "app/titanic-mlp/model-titanic.pt"
     let opt = mkAdam itr beta1 beta2 (flattenParameters init)
     -- let opt = GD
     (trained, _, losses) <- foldLoop (init, opt, []) numIters $ \(model, optimizer, losses) i -> do
@@ -72,10 +72,10 @@ titanic = do
     case maybeLastLoss of
         Nothing -> return ()
         Just lastLoss -> do
-            let filename = "src/titanic-mlp/curves/graph-titanic-mse" ++ show lastLoss ++ ".png"
+            let filename = "app/titanic-mlp/curves/graph-titanic-mse" ++ show lastLoss ++ ".png"
             drawLearningCurve filename "Learning Curve" [("", losses)]
 
-    let modelName = "src/titanic-mlp/models/model-titanic-" ++
+    let modelName = "app/titanic-mlp/models/model-titanic-" ++
                     (if null losses then "noLosses" else show (last losses)) ++ ".pt"
     saveParams trained modelName
 
@@ -91,7 +91,7 @@ titanic = do
     -- test 1 output
     let outputs = map (\(input, passengerId) -> (passengerId, mlpLayer model (asTensor input))) testData
     let outputs' = map (\(passengerId, output) -> (passengerId, if (asValue output :: Float) > 0.5 then 1 else 0)) outputs
-    writeFile "src/titanic-mlp/data/submission.csv" $ arrayToCSV outputs'
+    writeFile "app/titanic-mlp/data/submission.csv" $ arrayToCSV outputs'
     return ()
 
     where

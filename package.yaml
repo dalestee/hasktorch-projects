@@ -40,7 +40,7 @@ ghc-options:
 library:
   source-dirs: 
     - src
-    - src/titanic-mlp
+    - app/titanic-mlp
 
 executables:
   hasktorch-projects-exe:
