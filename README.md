@@ -13,6 +13,12 @@ stack run main
 ### Titanic Dataset
 - You can find the Titanic dataset [here](https://www.kaggle.com/c/titanic/data).
 
+**Hyperparameters:**
+- **Input Layer:** 7
+- **Hidden Layer:** 21
+- **Output Layer:** 1
+- **Learning Rate:** 0.01
+
 ### Learning Curves
 - **GD Optimizer:**
   ![Titanic Learning Curve with GD Optimizer](/app/titanic-mlp/curves/graph-titanic-mse210.8436_GD.png)
