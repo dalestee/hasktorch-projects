@@ -15,10 +15,10 @@ stack run main
 
 ### learning curve:
 
-- GD optimizer
+GD optimizer
 ![titanic learning curve](/app/titanic-mlp/curves/graph-titanic-mse210.8436_GD.png)
 
-- Adam optimizer
+Adam optimizer
 ![titanic learning curve](/app/titanic-mlp/curves/graph-titanic-mse129.70596_Adam.png)
 
 ### accuracy: 
