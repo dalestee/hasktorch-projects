@@ -31,12 +31,14 @@ import ML.Exp.Chart (drawLearningCurve) --nlp-tools
 --------------------------------------------------------------------------------
 
 -- Survived,Pclass,Sex,Age,SibSp,Parch,Fare,Embarked
-parseDataTrain :: [([Float], Float)]
-parseDataTrain = unsafePerformIO $ do
+parseData :: IO ([([Float], Float)], [([Float], Float)])
+parseData = do
     content <- readFile "app/titanic-mlp/data/train-mod.csv"
     let lines' = tail $ lines content
-    return $ map (\line -> let fields = splitOn "," line in
-        ([read (fields !! 1), read (fields !! 2), read (fields !! 3), read (fields !! 4), read (fields !! 5), read (fields !! 6), read (fields !! 7)], read (fields !! 0))) lines'
+    let dataset = map (\line -> let fields = splitOn "," line in ([read (fields !! 1), read (fields !! 2), read (fields !! 3), read (fields !! 4), read (fields !! 5), read (fields !! 6), read (fields !! 7)], read (fields !! 0))) lines'
+    let trainSize = round (0.9 * fromIntegral (length dataset)) :: Int
+    let (trainData, valData) = splitAt trainSize dataset
+    return (trainData, valData)
 
 -- Pclass,Sex,Age,SibSp,Parch,Fare,Embarked
 parseDataTest :: [([Float], Int)]
@@ -55,8 +57,8 @@ arrayToCSV = unlines . map (\(a, b) -> show a ++ "," ++ show b)
 
 titanic :: IO ()
 titanic = do
-    init <- sample hyperParams
-    -- init <- loadParams hyperParams "app/titanic-mlp/model-titanic.pt"
+    -- init <- sample hyperParams
+    init <- loadParams hyperParams "app/titanic-mlp/models/model-titanic-160.46135.pt"
     let opt = mkAdam itr beta1 beta2 (flattenParameters init)
     -- let opt = GD
     (trained, _, losses) <- foldLoop (init, opt, []) numIters $ \(model, optimizer, losses) i -> do
@@ -81,8 +83,7 @@ titanic = do
 
     model <- loadParams hyperParams modelName
 
-    let trainDataTest = parseDataTrain
-    let outputsTrain = map (\(input, passengerId) -> (passengerId, mlpLayer model (asTensor input))) trainDataTest
+    let outputsTrain = map (\(input, passengerId) -> (passengerId, mlpLayer model (asTensor input))) validationData
     let outputsTrain' = map (\(passengerId, output) -> (passengerId, if (asValue output :: Float) > 0.5 then 1 else 0)) outputsTrain
     let successRate = fromIntegral (length (filter (uncurry (==)) outputsTrain')) / fromIntegral (length outputsTrain')
     putStrLn $ "Success rate on training data: " ++ show successRate
@@ -95,7 +96,7 @@ titanic = do
     return ()
 
     where
-        numIters = 30
+        numIters = 0
         device = Device CPU 0
         hyperParams = MLPHypParams device 7 [(21, Relu), (1, Id)]
         -- betas are decaying factors Float, m's are the first and second moments [Tensor] and iter is the iteration number Int
@@ -103,7 +104,8 @@ titanic = do
         beta1 = 0.9
         beta2 = 0.999
         lr = 1e-2
-        trainingData = parseDataTrain
+        trainingData = unsafePerformIO $ fst <$> parseData
+        validationData = unsafePerformIO $ snd <$> parseData
 
 --------------------------------------------------------------------------------
 -- Validation
