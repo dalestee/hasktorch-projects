@@ -3,9 +3,14 @@
 ## Setup
 - Change the torch paths in `stack.yaml` to the correct paths on your system.
 
-then run:
+for linear **regression**:
 ```bash
-stack run main
+stack run linear
+```
+
+for **titanic**:
+```bash
+stack run titanic
 ```
 
 ## Linear Regression
