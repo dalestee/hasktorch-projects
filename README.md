@@ -8,6 +8,24 @@ then run:
 stack run main
 ```
 
+## Linear Regression
+
+**Hyperparameters**
+- **Input Layer** 1
+- **Hidden Layer** 1
+- **Output Layer** 1
+- **Learning Rate** 0.01
+
+## Learning Curves
+
+- **GD Optimizer:**
+  ![Linear Regression Learning Curve with GD Optimizer](/app/linear-regression/curves/graph-linear-good.png)
+
+## Accuracy
+- **GD Optimizer:**
+  - Test Set: 1.0
+  - Training Set: 0.8
+
 ## Titanic
 
 ### Titanic Dataset
@@ -28,11 +46,11 @@ stack run main
 
 ### Accuracy
 - **GD Optimizer:**
-  - Kaggle Validation Set: 0.62200
+  - Kaggle Test Set: 0.62200
   - Training Set: 0.61616
 
 - **Adam Optimizer:**
-  - Kaggle Validation Set: 0.74641
+  - Kaggle Test Set: 0.74641
   - Training Set: 0.79904
 
 

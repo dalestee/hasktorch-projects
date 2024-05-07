@@ -1,5 +1,3 @@
-module Main where
-
 --hasktorch
 import Torch.Tensor (asValue)
 import Torch.Functional (mseLoss,add)
