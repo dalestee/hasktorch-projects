@@ -19,7 +19,7 @@ stack run main
 ## Learning Curves
 
 - **GD Optimizer:**
-  ![Linear Regression Learning Curve with GD Optimizer](/app/linear-regression/curves/graph-linear-good.png)
+  ![Linear Regression Learning Curve with GD Optimizer](/app/linearRegression/curves/graph-linear-good.png)
 
 ## Accuracy
 - **GD Optimizer:**
