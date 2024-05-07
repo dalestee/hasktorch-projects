@@ -41,6 +41,7 @@ library:
   source-dirs: 
     - src
     - app/titanic-mlp
+    - app/linearRegression
 
 executables:
   hasktorch-projects-exe:

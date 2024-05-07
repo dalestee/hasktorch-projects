@@ -57,8 +57,8 @@ arrayToCSV = unlines . map (\(a, b) -> show a ++ "," ++ show b)
 
 titanic :: IO ()
 titanic = do
-    -- init <- sample hyperParams
-    init <- loadParams hyperParams "app/titanic-mlp/models/model-titanic-160.46135.pt"
+    init <- sample hyperParams
+    -- init <- loadParams hyperParams "app/titanic-mlp/models/model-titanic-160.46135.pt"
     let opt = mkAdam itr beta1 beta2 (flattenParameters init)
     -- let opt = GD
     (trained, _, losses) <- foldLoop (init, opt, []) numIters $ \(model, optimizer, losses) i -> do
@@ -96,7 +96,7 @@ titanic = do
     return ()
 
     where
-        numIters = 0
+        numIters = 100
         device = Device CPU 0
         hyperParams = MLPHypParams device 7 [(21, Relu), (1, Id)]
         -- betas are decaying factors Float, m's are the first and second moments [Tensor] and iter is the iteration number Int

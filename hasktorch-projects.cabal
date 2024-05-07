@@ -27,6 +27,7 @@ library
   exposed-modules:
       Lib
       Titanic
+      LinearRegression
   other-modules:
       Paths_hasktorch_projects
   autogen-modules:
@@ -34,6 +35,7 @@ library
   hs-source-dirs:
       src
       app/titanic-mlp
+      app/linearRegression
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
