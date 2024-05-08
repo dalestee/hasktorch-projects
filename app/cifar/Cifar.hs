@@ -23,7 +23,7 @@ import ImageToList (loadImages)
 import Control.Monad (when)
 import Data.List()
 import Torch.Tensor         (Tensor, asTensor)
-import Torch.Functional     (mseLoss, softmax, Dim(..))
+import Torch.Functional     (mseLoss, logSoftmax, Dim(..)) -- tried with softmax but it didn't work
 import Torch.NN             (flattenParameters, sample)
 import Torch.Optim          (foldLoop, mkAdam)
 import Torch.Device         (Device(..),DeviceType(..))
@@ -56,7 +56,9 @@ loss model dim (input, output) =
     in mseLoss y output
 
 forward :: MLPParams -> Dim -> Tensor -> Tensor
-forward model dim input = softmax dim $ mlpLayer model input
+forward model dim input = logSoftmax dim output
+    where
+        output = mlpLayer model input
 
 cifar :: IO ()
 cifar = do
@@ -104,14 +106,11 @@ cifar = do
         -- 32x32 images
         -- ResNet-152
         -- hyperParams = MLPHypParams device 3072 [(2048, Relu), (1024, Relu), (512, Relu), (256, Relu), (128, Relu), (64, Relu), (32, Relu), (16, Relu), (8, Relu), (4, Relu), (2, Relu), (10, Id)] -- very slow to learn can't know if is effective
-        -- hyperParams = MLPHypParams device 3072 [(256, Relu), (256, Relu), (10, Id)] not very effective but faster to learn
-        hyperParams = MLPHypParams device 3072 [(380, Relu), (160, Relu), (80, Relu), (40, Relu), (20, Relu), (10, Id)] -- very slow to learn can't know if is effective
+        hyperParams = MLPHypParams device 3072 [(256, Relu), (256, Relu), (10, Id)] -- not very effective but faster to learn
+        -- hyperParams = MLPHypParams device 3072 [(380, Relu), (160, Relu), (80, Relu), (40, Relu), (20, Relu), (10, Id)]
         -- betas are decaying factors Float, m's are the first and second moments [Tensor] and iter is the iteration number Int
         itr = 0
         beta1 = 0.9
         beta2 = 0.999
         lr = 1e-3
-        dim = Dim (-1)
-
-
-
+        dim = Dim 0
