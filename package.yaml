@@ -26,6 +26,9 @@ dependencies:
 - nlp-tools
 - split
 - JuicyPixels
+- filepath
+- random
+- random-shuffle
 
 ghc-options:
 - -Wall

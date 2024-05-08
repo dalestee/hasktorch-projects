@@ -44,9 +44,12 @@ library
   build-depends:
       JuicyPixels
     , base >=4.7 && <5
+    , filepath
     , hasktorch
     , hasktorch-tools
     , nlp-tools
+    , random
+    , random-shuffle
     , split
   default-language: Haskell2010
 
@@ -62,10 +65,13 @@ executable hasktorch-projects-exe
   build-depends:
       JuicyPixels
     , base >=4.7 && <5
+    , filepath
     , hasktorch
     , hasktorch-projects
     , hasktorch-tools
     , nlp-tools
+    , random
+    , random-shuffle
     , split
   default-language: Haskell2010
 
@@ -82,9 +88,12 @@ test-suite hasktorch-projects-test
   build-depends:
       JuicyPixels
     , base >=4.7 && <5
+    , filepath
     , hasktorch
     , hasktorch-projects
     , hasktorch-tools
     , nlp-tools
+    , random
+    , random-shuffle
     , split
   default-language: Haskell2010
