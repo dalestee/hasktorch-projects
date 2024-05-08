@@ -1,8 +1,8 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use tuple-section" #-}
 module ImageToList (imageToRgb, loadImages) where
 
-import Codec.Picture         (readImage, pixelAt, PixelRGB8(..), DynamicImage, convertRGB8, Image(..))
-import System.FilePath.Posix (splitExtension)
-import Data.Word             (Word8)
+import Codec.Picture         (readImage, pixelAt, PixelRGB8(..), convertRGB8, Image(..))
 import Text.Printf           (printf)
 import Control.Monad         (forM)
 
@@ -14,7 +14,6 @@ imageToRgb fp = do
             putStrLn ("Error loading image: " ++ err)
             return []
         Right img -> do
-            let (filename, ext) = splitExtension fp
             let img' = convertRGB8 img
             let (Image width height _) = img'
             let pixels = [pixelAt img' x y | x <- [0..width-1], y <- [0..height-1]]
@@ -33,7 +32,7 @@ loadImages fp = do
         return $ map (\img -> (idx, img)) images
     return $ concat images
 
-main :: IO ()
-main = do
-    result <- imageToRgb "app/cifar/data/trainData/airplane/0001.png"
-    print result
+-- main :: IO ()
+-- main = do
+--     result <- imageToRgb "app/cifar/data/trainData/airplane/0001.png"
+--     print result

@@ -22,7 +22,7 @@ import ImageToList (loadImages)
 --hasktorch
 import Control.Monad (when)
 import Data.List()
-import Torch.Tensor         (Tensor, asTensor, asValue, shape)
+import Torch.Tensor         (Tensor, asTensor)
 import Torch.Functional     (mseLoss, softmax, Dim(..))
 import Torch.NN             (flattenParameters, sample)
 import Torch.Optim          (foldLoop, mkAdam)
@@ -75,6 +75,9 @@ cifar = do
         when (i `mod` 1 == 0) $ do
             print i
             print epochLoss
+        when (i `mod` 50 == 0) $ do
+            let modelName = "app/cifar/models/model-cifar-" ++ show i ++ ".pt"
+            saveParams model modelName
         (newState, newOpt) <- update model optimizer epochLoss lr
         return (newState, newOpt, losses :: [Float]) -- without the losses curve
         -- return (newState, newOpt, losses ++ [asValue epochLoss :: Float]) -- with the losses curve
@@ -85,29 +88,30 @@ cifar = do
     case maybeLastLoss of
         Nothing -> return ()
         Just lastLoss -> do
-            let filename = "app/titanic-mlp/curves/graph-titanic-mse" ++ show lastLoss ++ ".png"
+            let filename = "app/cifar/curves/graph-cifar-mse" ++ show lastLoss ++ ".png"
             drawLearningCurve filename "Learning Curve" [("", losses)]
 
-    let modelName = "app/titanic-mlp/models/model-titanic-" ++ -- uncomment if you want to save the model
+    let modelName = "app/cifar/models/model-cifar-" ++ -- uncomment if you want to save the model
                      -- uncomment if you want to save the model
                     (if null losses then "noLosses" else show (last losses)) ++ ".pt" -- uncomment if you want to save the model
     -- let modelName = "app/titanic-mlp/models/model-titanic-129.70596_Adam.pt" -- comment if you want to train from scratch
     saveParams trained modelName
 
     where
-        numEpochs = 100
-        numImages = 5000
+        numEpochs = 10000
+        numImages = 50000
         device = Device CPU 0
         -- 32x32 images
         -- ResNet-152
-        hyperParams = MLPHypParams device 3072 [(2048, Relu), (1024, Relu), (512, Relu), (256, Relu), (128, Relu), (64, Relu), (32, Relu), (16, Relu), (8, Relu), (4, Relu), (2, Relu), (10, Id)]
-        -- hyperParams = MLPHypParams device 3072 [(256, Relu), (256, Relu), (10, Id)]
+        -- hyperParams = MLPHypParams device 3072 [(2048, Relu), (1024, Relu), (512, Relu), (256, Relu), (128, Relu), (64, Relu), (32, Relu), (16, Relu), (8, Relu), (4, Relu), (2, Relu), (10, Id)] -- very slow to learn can't know if is effective
+        -- hyperParams = MLPHypParams device 3072 [(256, Relu), (256, Relu), (10, Id)] not very effective but faster to learn
+        hyperParams = MLPHypParams device 3072 [(380, Relu), (160, Relu), (80, Relu), (40, Relu), (20, Relu), (10, Id)] -- very slow to learn can't know if is effective
         -- betas are decaying factors Float, m's are the first and second moments [Tensor] and iter is the iteration number Int
         itr = 0
         beta1 = 0.9
         beta2 = 0.999
-        lr = 1e-1
-        dim = Dim 0
+        lr = 1e-3
+        dim = Dim (-1)
 
 
 
