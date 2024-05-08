@@ -25,6 +25,7 @@ dependencies:
 - hasktorch-tools
 - nlp-tools
 - split
+- JuicyPixels
 
 ghc-options:
 - -Wall
@@ -42,6 +43,7 @@ library:
     - src
     - app/titanic-mlp
     - app/linearRegression
+    - app/cifar
 
 executables:
   hasktorch-projects-exe:
