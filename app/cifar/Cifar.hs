@@ -16,6 +16,8 @@ module Cifar (cifar) where
 -- image processing
 import ImageToList (loadImages)
 
+import Debug.Trace (traceShow)
+
 -- data
 -- import Evaluation (accuracy, precision, recall, extractBinary)
 
@@ -23,7 +25,7 @@ import ImageToList (loadImages)
 import Control.Monad (when)
 import Data.List()
 import Torch.Tensor         (Tensor, asTensor)
-import Torch.Functional     (mseLoss, logSoftmax, Dim(..)) -- tried with softmax but it didn't work
+import Torch.Functional     (mseLoss, softmax, Dim(..))
 import Torch.NN             (flattenParameters, sample)
 import Torch.Optim          (foldLoop, mkAdam)
 import Torch.Device         (Device(..),DeviceType(..))
@@ -45,7 +47,7 @@ import ML.Exp.Chart (drawLearningCurve)
 -- Data
 --------------------------------------------------------------------------------
 
-randomizeData :: [(Int, [Float])] -> IO [(Int, [Float])]
+randomizeData :: [([Float], [Float])] -> IO [([Float], [Float])]
 randomizeData data' = do
     shuffle' data' (length data') <$> newStdGen
 
@@ -56,7 +58,7 @@ loss model dim (input, output) =
     in mseLoss y output
 
 forward :: MLPParams -> Dim -> Tensor -> Tensor
-forward model dim input = logSoftmax dim output
+forward model dim input = softmax dim output
     where
         output = mlpLayer model input
 
@@ -68,7 +70,7 @@ cifar = do
     -- print images
     images <- loadImages "app/cifar/data/trainData"
     rImages <- randomizeData images
-    let trainingData = take numImages $ map (\(label, img) -> (asTensor img, asTensor ([fromIntegral label] :: [Float]))) rImages    -- print tensor size
+    let trainingData = take numImages $ map (\(label, img) -> (asTensor img, asTensor label)) rImages
     putStrLn $ "Training data size: " ++ show (length trainingData)
     init <- sample hyperParams
     let opt = mkAdam itr beta1 beta2 (flattenParameters init)
@@ -109,8 +111,8 @@ cifar = do
         hyperParams = MLPHypParams device 3072 [(256, Relu), (256, Relu), (10, Id)] -- not very effective but faster to learn
         -- hyperParams = MLPHypParams device 3072 [(380, Relu), (160, Relu), (80, Relu), (40, Relu), (20, Relu), (10, Id)]
         -- betas are decaying factors Float, m's are the first and second moments [Tensor] and iter is the iteration number Int
-        itr = 0
+        itr = 0                                                                                           
         beta1 = 0.9
         beta2 = 0.999
         lr = 1e-3
-        dim = Dim 0
+        dim = Dim (-1)

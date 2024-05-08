@@ -19,18 +19,20 @@ imageToRgb fp = do
             let pixels = [pixelAt img' x y | x <- [0..width-1], y <- [0..height-1]]
             return $ concatMap (\(PixelRGB8 r g b) -> [fromIntegral r / 255.0, fromIntegral g / 255.0, fromIntegral b / 255.0]) pixels
 
-loadImages :: FilePath -> IO [(Int, [Float])]
+loadImages :: FilePath -> IO [([Float], [Float])]
 loadImages fp = do
-    -- Load the images from all the folders
-    -- transform the labels into ids
     putStrLn "Loading data..."
     let labels = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
-    images <- forM (zip labels [1..]) $ \(label, idx) -> do
+    images <- forM (zip labels [0..]) $ \(label, idx) -> do
         let folder = fp ++ "/" ++ label
         let paths = map (\i -> folder ++ "/" ++ printf "%04d" (i :: Int) ++ ".png") [1..5000]
         images <- mapM imageToRgb paths
-        return $ map (\img -> (idx, img)) images
+        return $ map (\img -> (oneHot 10 idx, img)) images
     return $ concat images
+  where
+    oneHot :: Int -> Int -> [Float]
+    oneHot numClasses label = 
+        [ if i == label then 1.0 else 0.0 | i <- [0..numClasses-1] ]
 
 -- main :: IO ()
 -- main = do
