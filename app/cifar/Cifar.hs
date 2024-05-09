@@ -74,9 +74,9 @@ prediction output = classes !! argmax (asValue output)
     where
         classes = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
 
-validation :: MLPParams -> MLPHypParams ->[(Tensor, Tensor)] -> IO()
-validation model hyperparams dataset = do
-    newConfusionMatrix <- confusionMatrix' model dataset hyperparams
+validation :: MLPParams ->[(Tensor, Tensor)] -> IO()
+validation model dataset = do
+    newConfusionMatrix <- confusionMatrix' model dataset
     accuracy' <- accuracy newConfusionMatrix
     f1Micro <- f1Micro newConfusionMatrix
     f1Macro <- f1Macro newConfusionMatrix
@@ -108,7 +108,7 @@ cifar = do
             print ("Epoch: " ++ show i ++ " | Validation")
             let modelName = "app/cifar/models/model-cifar-256x256" ++ show i ++ ".pt"
             saveParams model modelName
-            validation model hyperParams validationData
+            validation model validationData
         (newState, newOpt) <- update model optimizer epochLoss lr
         return (newState, newOpt, losses :: [Float]) -- without the losses curve
         -- return (newState, newOpt, losses ++ [asValue epochLoss :: Float]) -- with the losses curve

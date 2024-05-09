@@ -47,8 +47,8 @@ confusionMatrix  modelPath dataset hyperParams = do
             acc') matrix outputsTrain'
     return matrix'
 
-confusionMatrix' :: MLPParams -> [(Tensor, Tensor)] -> MLPHypParams -> IO [[Int]]
-confusionMatrix'  model dataset hyperParams = do
+confusionMatrix' :: MLPParams -> [(Tensor, Tensor)] -> IO [[Int]]
+confusionMatrix'  model dataset = do
     let outputsTrain = map (\(input, actual) -> (actual, mlpLayer model input)) dataset
     let outputsTrain' = map (\(actual, prediction) -> (actual, prediction)) outputsTrain
     -- foreach (actual, prediction) in outputsTrain' actual is i and prediction is j
