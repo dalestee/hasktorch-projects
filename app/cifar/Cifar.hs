@@ -17,7 +17,7 @@
 module Cifar (cifar) where
 
 -- data
-import MultClassEvaluation (accuracy, precision, recall, extractBinaryMultClassification)
+import MultClassEvaluation (accuracy, confusionMatrix, f1Macro, f1Micro, f1Weighted)
 import Func (argmax)
 
 -- image processing
@@ -32,6 +32,8 @@ import Torch.Optim          (foldLoop, mkAdam)
 import Torch.Device         (Device(..),DeviceType(..))
 import Torch.Train          (update, saveParams, loadParams)
 import Torch.Layer.MLP (MLPHypParams(..), ActName(..), mlpLayer, MLPParams)
+
+import Control.Monad (when)
 
 -- random
 import System.Random (newStdGen)
@@ -74,60 +76,67 @@ prediction output = classes !! argmax (asValue output)
 
 cifar :: IO ()
 cifar = do
-    -- images <- loadImages "app/cifar/data/trainData"
-    -- -- print type of image
-    -- images <- randomizeData images
-    -- print images
-    -- images <- loadImages 5000 "app/cifar/data/trainData"
-    -- rImages <- randomizeData images
-    -- let trainingData = take numImages $ map (\(label, img) -> (asTensor img, asTensor label)) rImages
---     putStrLn $ "Training data size: " ++ show (length trainingData)
---     init <- sample hyperParams
---     let opt = mkAdam itr beta1 beta2 (flattenParameters init)
---     (trained, _, losses) <- foldLoop (init, opt, []) numEpochs $ \(model, optimizer, losses) i -> do
---         let epochLoss = sum (map (loss model dim) trainingData)
---         when (i `mod` 1 == 0) $ do
---             print i
---             print epochLoss
---         when (i `mod` 50 == 0) $ do
---             let modelName = "app/cifar/models/model-cifar-" ++ show i ++ ".pt"
---             saveParams model modelName
---         (newState, newOpt) <- update model optimizer epochLoss lr
---         return (newState, newOpt, losses :: [Float]) -- without the losses curve
---         -- return (newState, newOpt, losses ++ [asValue epochLoss :: Float]) -- with the losses curve
+    images <- loadImages 5000 "app/cifar/data/trainData"
+    rImages <- randomizeData images
+    let trainingData = take numImages $ map (\(label, img) -> (asTensor img, asTensor label)) rImages
+    putStrLn $ "Training data size: " ++ show (length trainingData)
+    init <- loadParams hyperParams "app/cifar/models/model-cifar-750_51Acc.pt" -- comment if you want to train from scratch
+    -- init <- sample hyperParams
+    let opt = mkAdam itr beta1 beta2 (flattenParameters init)
+    (trained, _, losses) <- foldLoop (init, opt, []) numEpochs $ \(model, optimizer, losses) i -> do
+        let epochLoss = sum (map (loss model dim) trainingData)
+        when (i `mod` 1 == 0) $ do
+            print i
+            print epochLoss
+        when (i `mod` 50 == 0) $ do
+            let modelName = "app/cifar/models/model-cifar-" ++ show i ++ ".pt"
+            saveParams model modelName
+        (newState, newOpt) <- update model optimizer epochLoss lr
+        return (newState, newOpt, losses :: [Float]) -- without the losses curve
+        -- return (newState, newOpt, losses ++ [asValue epochLoss :: Float]) -- with the losses curve
 
 -- --------------------------------------------------------------------------------
 -- -- Saving
 -- --------------------------------------------------------------------------------
 
---     let maybeLastLoss = if null losses then Nothing else Just (last losses)
---     case maybeLastLoss of
---         Nothing -> return ()
---         Just lastLoss -> do
---             let filename = "app/cifar/curves/graph-cifar-mse" ++ show lastLoss ++ ".png"
---             drawLearningCurve filename "Learning Curve" [("", losses)]
+    let maybeLastLoss = if null losses then Nothing else Just (last losses)
+    case maybeLastLoss of
+        Nothing -> return ()
+        Just lastLoss -> do
+            let filename = "app/cifar/curves/graph-cifar-mse" ++ show lastLoss ++ ".png"
+            drawLearningCurve filename "Learning Curve" [("", losses)]
 
---     let modelName = "app/cifar/models/model-cifar-" ++ -- uncomment if you want to save the model
---                      -- uncomment if you want to save the model
---                     (if null losses then "noLosses" else show (last losses)) ++ ".pt" -- uncomment if you want to save the model
---     -- let modelName = "app/titanic-mlp/models/model-titanic-129.70596_Adam.pt" -- comment if you want to train from scratch
---     saveParams trained modelName
+    let modelName = "app/cifar/models/model-cifar-" ++ -- uncomment if you want to save the model
+                     -- uncomment if you want to save the model
+                    (if null losses then "noLosses" else show (last losses)) ++ ".pt" -- uncomment if you want to save the model
+    -- let modelName = "app/titanic-mlp/models/model-titanic-129.70596_Adam.pt" -- comment if you want to train from scratch
+    saveParams trained modelName
 
 --------------------------------------------------------------------------------
 -- Validation
 --------------------------------------------------------------------------------
 
-    imagesTest <- loadImages 1000 "app/cifar/data/testData"
-    let testData = map (\(label, img) -> (asTensor img, asTensor label)) imagesTest
+    -- imagesTest <- loadImages 1000 "app/cifar/data/testData"
+    -- let testData = map (\(label, img) -> (asTensor img, asTensor label)) imagesTest
 
-    putStrLn $ "Test data size: " ++ show (length testData)
-    putStrLn "Evaluating model..."
+    -- putStrLn $ "Test data size: " ++ show (length testData)
+    -- putStrLn "Evaluating model..."
 
-    (tp, fp, fn) <- extractBinaryMultClassification "app/cifar/models/model-cifar-750_51Acc.pt" testData hyperParams
+    -- confusionMatrix <- confusionMatrix "app/cifar/models/model-cifar-600.pt" testData hyperParams
 
-    putStrLn $ "accuracy: " ++ show (accuracy tp fp fn)
-    putStrLn $ "precision: " ++ show (precision tp fp)
-    putStrLn $ "recall: " ++ show (recall tp fn)
+    -- accuracy <- accuracy confusionMatrix
+
+    -- putStrLn $ "Accuracy: " ++ show accuracy
+
+    -- f1Micro <- f1Micro confusionMatrix
+    -- f1Macro <- f1Macro confusionMatrix
+    -- f1Weighted <- f1Weighted confusionMatrix
+
+    -- putStrLn $ "F1 Micro: " ++ show f1Micro
+    -- putStrLn $ "F1 Macro: " ++ show f1Macro
+    -- putStrLn $ "F1 Weighted: " ++ show f1Weighted
+
+    -- print confusionMatrix
 
 --------------------------------------------------------------------------------
 -- kaggle submission
@@ -159,7 +168,7 @@ cifar = do
 
     where
         numEpochs = 10000 :: Int
-        numImages = 1000 :: Int
+        numImages = 50000 :: Int
         device = Device CPU 0
         -- 32x32 images
         -- ResNet-152
@@ -167,8 +176,8 @@ cifar = do
         hyperParams = MLPHypParams device 3072 [(256, Relu), (256, Relu), (10, Id)] -- not very effective but faster to learn
         -- hyperParams = MLPHypParams device 3072 [(380, Relu), (160, Relu), (80, Relu), (40, Relu), (20, Relu), (10, Id)]
         -- betas are decaying factors Float, m's are the first and second moments [Tensor] and iter is the iteration number Int
-        itr = 0 :: Integer
+        itr = 0
         beta1 = 0.9 :: Float
         beta2 = 0.999 :: Float
-        lr = 1e-3 :: Float
+        lr = 1e-3
         dim = Dim (-1) :: Dim
