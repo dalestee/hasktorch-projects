@@ -58,4 +58,22 @@ stack run titanic
   - Kaggle Test Set: 0.74641
   - Training Set: 0.79904
 
+## Cifar
+- You can find the Titanic dataset [here](https://github.com/hasktorch/hasktorch/blob/master/hasktorch/src/Torch/Vision.hs).
+- You can find the Titanic competition [here](https://www.kaggle.com/competitions/cifar-10).
+
+**Hyperparameters:**
+- **Input Layer:** 3074
+- **Hidden Layer:** 256
+- **Output Layer:** 256
+- **Learning Rate:** 0.001
+
+### Learning Curves
+- Saddly I couldn't generate this learning curve as it crashed -- To be fixed
+
+### Accuracy
+- **Adam Optimizer:**
+  - Kaggle Test Set: 0.6722237
+  - Training Set: 0.51180
+
 
