@@ -17,7 +17,7 @@
 module Cifar (cifar) where
 
 -- data
-import MultClassEvaluation (accuracy, confusionMatrix, f1Macro, f1Micro, f1Weighted)
+import MultClassEvaluation (accuracy, confusionMatrix, confusionMatrix', f1Macro, f1Micro, f1Weighted)
 import Func (argmax)
 
 -- image processing
@@ -74,23 +74,41 @@ prediction output = classes !! argmax (asValue output)
     where
         classes = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
 
+validation :: MLPParams -> MLPHypParams ->[(Tensor, Tensor)] -> IO()
+validation model hyperparams dataset = do
+    newConfusionMatrix <- confusionMatrix' model dataset hyperparams
+    accuracy' <- accuracy newConfusionMatrix
+    f1Micro <- f1Micro newConfusionMatrix
+    f1Macro <- f1Macro newConfusionMatrix
+    f1Weighted <- f1Weighted newConfusionMatrix
+    putStrLn $ "Accuracy: " ++ show accuracy'
+    putStrLn $ "F1 Micro: " ++ show f1Micro
+    putStrLn $ "F1 Macro: " ++ show f1Macro
+    putStrLn $ "F1 Weighted: " ++ show f1Weighted
+
 cifar :: IO ()
 cifar = do
     images <- loadImages 5000 "app/cifar/data/trainData"
     rImages <- randomizeData images
-    let trainingData = take numImages $ map (\(label, img) -> (asTensor img, asTensor label)) rImages
+    let totalImages = length (take numImages rImages)
+    let numTrainingImages = totalImages * 90 `div` 100
+    let numValidationImages = totalImages - numTrainingImages
+    let (trainingRImages, validationRImages) = splitAt numTrainingImages rImages
+    let trainingData = map (\(label, img) -> (asTensor img, asTensor label)) trainingRImages
+    let validationData = map (\(label, img) -> (asTensor img, asTensor label)) validationRImages
     putStrLn $ "Training data size: " ++ show (length trainingData)
-    init <- loadParams hyperParams "app/cifar/models/model-cifar-750_51Acc.pt" -- comment if you want to train from scratch
-    -- init <- sample hyperParams
+    -- init <- loadParams hyperParams "app/cifar/models/model-cifar-750_51Acc.pt" -- comment if you want to train from scratch
+    init <- sample hyperParams -- comment if you want to load a model
     let opt = mkAdam itr beta1 beta2 (flattenParameters init)
     (trained, _, losses) <- foldLoop (init, opt, []) numEpochs $ \(model, optimizer, losses) i -> do
         let epochLoss = sum (map (loss model dim) trainingData)
         when (i `mod` 1 == 0) $ do
-            print i
-            print epochLoss
+            print ("Epoch: " ++ show i ++ " | Loss: " ++ show (asValue epochLoss :: Float))     
         when (i `mod` 50 == 0) $ do
-            let modelName = "app/cifar/models/model-cifar-" ++ show i ++ ".pt"
+            print ("Epoch: " ++ show i ++ " | Validation")
+            let modelName = "app/cifar/models/model-cifar-256x256" ++ show i ++ ".pt"
             saveParams model modelName
+            validation model hyperParams validationData
         (newState, newOpt) <- update model optimizer epochLoss lr
         return (newState, newOpt, losses :: [Float]) -- without the losses curve
         -- return (newState, newOpt, losses ++ [asValue epochLoss :: Float]) -- with the losses curve
@@ -168,7 +186,7 @@ cifar = do
 
     where
         numEpochs = 10000 :: Int
-        numImages = 50000 :: Int
+        numImages = 10000 :: Int
         device = Device CPU 0
         -- 32x32 images
         -- ResNet-152

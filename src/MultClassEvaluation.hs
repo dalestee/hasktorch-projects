@@ -1,7 +1,7 @@
-module MultClassEvaluation (accuracy, confusionMatrix, f1Macro, f1Micro, f1Weighted, fp, tp, fn) where
+module MultClassEvaluation (accuracy, confusionMatrix, confusionMatrix', f1Macro, f1Micro, f1Weighted, fp, tp, fn) where
 
 import Torch.Train        (loadParams)
-import Torch.Layer.MLP    (mlpLayer, MLPHypParams(..))
+import Torch.Layer.MLP    (mlpLayer, MLPHypParams(..), MLPParams)
 import Torch.Tensor       (asValue, Tensor)
 import Func (argmax)
 
@@ -32,6 +32,23 @@ accuracy confMat = do
 confusionMatrix :: String -> [(Tensor, Tensor)] -> MLPHypParams -> IO [[Int]]
 confusionMatrix  modelPath dataset hyperParams = do
     model <- loadParams hyperParams modelPath
+    let outputsTrain = map (\(input, actual) -> (actual, mlpLayer model input)) dataset
+    let outputsTrain' = map (\(actual, prediction) -> (actual, prediction)) outputsTrain
+    -- foreach (actual, prediction) in outputsTrain' actual is i and prediction is j
+    -- create a matrix of size 10x10
+    -- and add one to matrix[i][j]
+    let matrix = [[0 | _ <- [(0 :: Integer)..9]] | _ <- [(0 :: Integer)..9]]
+    let matrix' = foldl (\acc (actual, prediction) -> do
+            let i = argmax (asValue actual)
+            let j = argmax (asValue prediction)
+            let row = acc !! i
+            let row' = take j row ++ [row !! j + 1] ++ drop (j + 1) row
+            let acc' = take i acc ++ [row'] ++ drop (i + 1) acc
+            acc') matrix outputsTrain'
+    return matrix'
+
+confusionMatrix' :: Torch.Layer.MLP.MLPParams -> [(Tensor, Tensor)] -> MLPHypParams -> IO [[Int]]
+confusionMatrix'  model dataset hyperParams = do
     let outputsTrain = map (\(input, actual) -> (actual, mlpLayer model input)) dataset
     let outputsTrain' = map (\(actual, prediction) -> (actual, prediction)) outputsTrain
     -- foreach (actual, prediction) in outputsTrain' actual is i and prediction is j
