@@ -1,3 +1,4 @@
 .stack-work/
 *~
-src/titanic-mlp/models/
+app/titanic-mlp/models/
+app/cifar/data/

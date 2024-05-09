@@ -26,9 +26,13 @@ source-repository head
 library
   exposed-modules:
       Evaluation
+      Func
+      ImageToList
       Lib
+      MultClassEvaluation
       Titanic
       LinearRegression
+      Cifar
   other-modules:
       Paths_hasktorch_projects
   autogen-modules:
@@ -37,13 +41,19 @@ library
       src
       app/titanic-mlp
       app/linearRegression
+      app/cifar
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      base >=4.7 && <5
+      JuicyPixels
+    , base >=4.7 && <5
+    , filepath
     , hasktorch
     , hasktorch-tools
     , nlp-tools
+    , random
+    , random-shuffle
     , split
+    , vector
   default-language: Haskell2010
 
 executable hasktorch-projects-exe
@@ -56,12 +66,17 @@ executable hasktorch-projects-exe
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      JuicyPixels
+    , base >=4.7 && <5
+    , filepath
     , hasktorch
     , hasktorch-projects
     , hasktorch-tools
     , nlp-tools
+    , random
+    , random-shuffle
     , split
+    , vector
   default-language: Haskell2010
 
 test-suite hasktorch-projects-test
@@ -75,10 +90,15 @@ test-suite hasktorch-projects-test
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      JuicyPixels
+    , base >=4.7 && <5
+    , filepath
     , hasktorch
     , hasktorch-projects
     , hasktorch-tools
     , nlp-tools
+    , random
+    , random-shuffle
     , split
+    , vector
   default-language: Haskell2010

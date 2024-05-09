@@ -2,7 +2,7 @@ module Evaluation (accuracy, precision, recall, extractBinary) where
 
 import Torch.Train        (loadParams)
 import Torch.Layer.MLP    (mlpLayer, MLPHypParams(..))
-import Torch.Tensor       (Tensor, asTensor, asValue)
+import Torch.Tensor       (asTensor, asValue)
 
 -- returns (tp, tn, fp, fn)
 extractBinary :: String -> [([Float], Float)] -> MLPHypParams -> IO (Int, Int, Int, Int)
