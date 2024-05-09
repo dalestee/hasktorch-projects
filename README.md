@@ -76,4 +76,5 @@ stack run titanic
   - Kaggle Test Set: 0.51180
   - Training Set: 0.6722237
 
-
+## Observations
+For Multi-class classification it is optimal to feed the data randomly to the model when training
