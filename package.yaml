@@ -29,6 +29,7 @@ dependencies:
 - filepath
 - random
 - random-shuffle
+- vector
 
 ghc-options:
 - -Wall
