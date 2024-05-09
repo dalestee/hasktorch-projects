@@ -73,7 +73,7 @@ stack run titanic
 
 ### Accuracy
 - **Adam Optimizer:**
-  - Kaggle Test Set: 0.6722237
-  - Training Set: 0.51180
+  - Kaggle Test Set: 0.51180
+  - Training Set: 0.6722237
 
 
