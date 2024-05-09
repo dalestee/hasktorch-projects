@@ -16,9 +16,9 @@ stack run titanic
 ## Linear Regression
 
 **Hyperparameters**
-- **Input Layer** 1
-- **Hidden Layer** 1
-- **Output Layer** 1
+- **Input Layer**  1
+- **Hidden Layer**  1
+- **Output Layer**  1
 - **Learning Rate** 0.01
 
 ## Learning Curves
@@ -28,7 +28,7 @@ stack run titanic
 
 ## Accuracy
 - **GD Optimizer:**
-  - Test Set: 1.0
+  - Test Set:     1.0
   - Training Set: 0.8
 
 ## Titanic
@@ -37,9 +37,9 @@ stack run titanic
 - You can find the Titanic dataset [here](https://www.kaggle.com/c/titanic/data).
 
 **Hyperparameters:**
-- **Input Layer:** 7
-- **Hidden Layer:** 21
-- **Output Layer:** 1
+- **Input Layer:**   7
+- **Hidden Layer:**  21
+- **Output Layer:**  1
 - **Learning Rate:** 0.01
 
 ### Learning Curves
@@ -52,21 +52,26 @@ stack run titanic
 ### Accuracy
 - **GD Optimizer:**
   - Kaggle Test Set: 0.62200
-  - Training Set: 0.61616
+  - Training Set:    0.61616
 
 - **Adam Optimizer:**
   - Kaggle Test Set: 0.74641
-  - Training Set: 0.79904
+  - Training Set:    0.79904
 
 ## Cifar
 - You can find the Titanic dataset [here](https://github.com/hasktorch/hasktorch/blob/master/hasktorch/src/Torch/Vision.hs).
 - You can find the Titanic competition [here](https://www.kaggle.com/competitions/cifar-10).
 
 **Hyperparameters:**
-- **Input Layer:** 3074
-- **Hidden Layer:** 256
-- **Output Layer:** 256
+- **Input Layer:**   3074
+- **Hidden Layer:**  256
+- **Output Layer:**  256
 - **Learning Rate:** 0.001
+
+**Evaluation Scores**
+- **F1 Macro:**    0.5002183
+- **F1 Weighted:** 0.50021833
+They are equal because there are equal amount of data between all classes
 
 ### Learning Curves
 - Saddly I couldn't generate this learning curve as it crashed -- To be fixed
@@ -74,7 +79,7 @@ stack run titanic
 ### Accuracy
 - **Adam Optimizer:**
   - Kaggle Test Set: 0.51180
-  - Training Set: 0.6722237
+  - Training Set:    0.6722237
 
 ## Observations
 For Multi-class classification it is optimal to feed the data randomly to the model when training
