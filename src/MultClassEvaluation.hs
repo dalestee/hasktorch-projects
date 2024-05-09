@@ -47,7 +47,7 @@ confusionMatrix  modelPath dataset hyperParams = do
             acc') matrix outputsTrain'
     return matrix'
 
-confusionMatrix' :: Torch.Layer.MLP.MLPParams -> [(Tensor, Tensor)] -> MLPHypParams -> IO [[Int]]
+confusionMatrix' :: MLPParams -> [(Tensor, Tensor)] -> MLPHypParams -> IO [[Int]]
 confusionMatrix'  model dataset hyperParams = do
     let outputsTrain = map (\(input, actual) -> (actual, mlpLayer model input)) dataset
     let outputsTrain' = map (\(actual, prediction) -> (actual, prediction)) outputsTrain
