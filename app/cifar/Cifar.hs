@@ -117,45 +117,45 @@ cifar = do
 -- Validation
 --------------------------------------------------------------------------------
 
-    -- imagesTest <- loadImages 1000 "app/cifar/data/testData"
-    -- let testData = map (\(label, img) -> (asTensor img, asTensor label)) imagesTest
+    imagesTest <- loadImages 1000 "app/cifar/data/testData"
+    let testData = map (\(label, img) -> (asTensor img, asTensor label)) imagesTest
 
-    -- putStrLn $ "Test data size: " ++ show (length testData)
-    -- putStrLn "Evaluating model..."
+    putStrLn $ "Test data size: " ++ show (length testData)
+    putStrLn "Evaluating model..."
 
-    -- (tp, fp, fn) <- extractBinaryMultClassification "app/cifar/models/model-cifar-750.pt" testData hyperParams
+    (tp, fp, fn) <- extractBinaryMultClassification "app/cifar/models/model-cifar-750_51Acc.pt" testData hyperParams
 
-    -- putStrLn $ "accuracy: " ++ show (accuracy tp fp fn)
-    -- putStrLn $ "precision: " ++ show (precision tp fp)
-    -- putStrLn $ "recall: " ++ show (recall tp fn)
+    putStrLn $ "accuracy: " ++ show (accuracy tp fp fn)
+    putStrLn $ "precision: " ++ show (precision tp fp)
+    putStrLn $ "recall: " ++ show (recall tp fn)
 
 --------------------------------------------------------------------------------
 -- kaggle submission
 --------------------------------------------------------------------------------
 
-    putStrLn "Predicting test data..."
-    putStrLn "Loading model..."
+    -- putStrLn "Predicting test data..."
+    -- putStrLn "Loading model..."
 
-    model <- loadParams hyperParams "app/cifar/models/model-cifar-750.pt"
+    -- model <- loadParams hyperParams "app/cifar/models/model-cifar-750_51Acc.pt"
 
-    putStrLn "Loading test data..."
+    -- putStrLn "Loading test data..."
 
-    imagesResults <- loadImagesNoLabels 300000 "app/cifar/data/cifar-10/testData/"
+    -- imagesResults <- loadImagesNoLabels 300000 "app/cifar/data/cifar-10/testData/"
 
-    putStrLn "Predicting test data..."
+    -- putStrLn "Predicting test data..."
 
-    -- indexes
-    -- airplane = 0, automobile = 1, bird = 2, cat = 3, deer = 4, dog = 5, frog = 6, horse = 7, ship = 8, truck = 9
-    -- write csvfile (id, prediction) ex: (1, cat) if the prediction is 3
+    -- -- indexes
+    -- -- airplane = 0, automobile = 1, bird = 2, cat = 3, deer = 4, dog = 5, frog = 6, horse = 7, ship = 8, truck = 9
+    -- -- write csvfile (id, prediction) ex: (1, cat) if the prediction is 3
 
-    let outputs = map (\img -> (img, mlpLayer model (asTensor img))) imagesResults
-    let outputs' = zipWith (\id (_, output) -> (id, prediction output)) [1..] outputs
+    -- let outputs = map (\img -> (img, mlpLayer model (asTensor img))) imagesResults
+    -- let outputs' = zipWith (\id (_, output) -> (id, prediction output)) [1..] outputs
     
-    putStrLn "Writing submission..."
+    -- putStrLn "Writing submission..."
     
-    writeFile "app/cifar/data/submission.csv" $ unlines $ map (\(img, output) -> show img ++ "," ++ output) outputs'
+    -- writeFile "app/cifar/data/submission.csv" $ unlines $ map (\(img, output) -> show img ++ "," ++ output) outputs'
 
-    putStrLn "Done."
+    -- putStrLn "Done."
 
     where
         numEpochs = 10000 :: Int
