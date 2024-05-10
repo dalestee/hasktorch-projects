@@ -17,7 +17,7 @@
 module Cifar (cifar) where
 
 -- data
-import MultClassEvaluation (accuracy, confusionMatrix, confusionMatrix', f1Macro, f1Micro, f1Weighted)
+import MultClassEvaluation (accuracy, confusionMatrix, confusionMatrix', f1Macro, f1Micro, f1Weighted, avarage, variance)
 import Func (argmax)
 
 -- image processing
@@ -69,8 +69,8 @@ prediction output = classes !! argmax (asValue output)
     where
         classes = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
 
-validation :: MLPParams ->[(Tensor, Tensor)] -> IO()
-validation model dataset = do
+evaluation :: MLPParams ->[(Tensor, Tensor)] -> IO()
+evaluation model dataset = do
     newConfusionMatrix <- confusionMatrix' model dataset
     accuracy' <- accuracy newConfusionMatrix
     f1Micro <- f1Micro newConfusionMatrix
@@ -103,7 +103,7 @@ cifar = do
             print ("Epoch: " ++ show i ++ " | Validation")
             let modelName = "app/cifar/models/model-cifar-256x256" ++ show i ++ ".pt"
             saveParams model modelName
-            validation model validationData
+            evaluation model validationData
         (newState, newOpt) <- update model optimizer epochLoss lr
         return (newState, newOpt, losses :: [Float]) -- without the losses curve
         -- return (newState, newOpt, losses ++ [asValue epochLoss :: Float]) -- with the losses curve
@@ -129,27 +129,20 @@ cifar = do
 -- Validation
 --------------------------------------------------------------------------------
 
-    -- imagesTest <- loadImages 1000 "app/cifar/data/testData"
-    -- let testData = map (\(label, img) -> (asTensor img, asTensor label)) imagesTest
+    putStrLn "Validation"
 
-    -- putStrLn $ "Test data size: " ++ show (length testData)
-    -- putStrLn "Evaluating model..."
+    evaluation trained validationData
 
-    -- confusionMatrix <- confusionMatrix "app/cifar/models/model-cifar-600.pt" testData hyperParams
+--------------------------------------------------------------------------------
+-- Test
+--------------------------------------------------------------------------------
 
-    -- accuracy <- accuracy confusionMatrix
+    putStrLn "Test"
 
-    -- putStrLn $ "Accuracy: " ++ show accuracy
+    imagesTest <- loadImages 1000 "app/cifar/data/testData"
+    let testData = map (\(label, img) -> (asTensor img, asTensor label)) imagesTest
 
-    -- f1Micro <- f1Micro confusionMatrix
-    -- f1Macro <- f1Macro confusionMatrix
-    -- f1Weighted <- f1Weighted confusionMatrix
-
-    -- putStrLn $ "F1 Micro: " ++ show f1Micro
-    -- putStrLn $ "F1 Macro: " ++ show f1Macro
-    -- putStrLn $ "F1 Weighted: " ++ show f1Weighted
-
-    -- print confusionMatrix
+    evaluation trained trainingData
 
 --------------------------------------------------------------------------------
 -- kaggle submission

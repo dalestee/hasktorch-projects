@@ -27,6 +27,3 @@ precision tp fp = fromIntegral tp / fromIntegral (tp + fp)
 -- f(tp,fn) = tp/(tp+fn)
 recall :: Int -> Int -> Float
 recall tp fn = fromIntegral tp / fromIntegral (tp + fn)
-
--- confMatrix :: 
-

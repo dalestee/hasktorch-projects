@@ -1,4 +1,4 @@
-module MultClassEvaluation (accuracy, confusionMatrix, confusionMatrix', f1Macro, f1Micro, f1Weighted, fp, tp, fn) where
+module MultClassEvaluation (accuracy, confusionMatrix, confusionMatrix', f1Macro, f1Micro, f1Weighted, fp, tp, fn, avarage, variance) where
 
 import Torch.Train        (loadParams)
 import Torch.Layer.MLP    (mlpLayer, MLPHypParams(..), MLPParams)
@@ -100,3 +100,9 @@ f1Weighted confMat = do
     let weights = map (\classIndex -> fromIntegral (length (confMat !! classIndex))) [0..numberOfClasses-1]
     let f1WeightedValue = sum (zipWith (*) f1s weights) / sum weights
     return f1WeightedValue
+
+avarage :: [Float] -> Float
+avarage xs = sum xs / fromIntegral (length xs)
+
+variance :: [Float] -> Float
+variance xs = avarage $ map (\x -> (x - avarage xs) ^ 2) xs
