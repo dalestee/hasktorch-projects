@@ -1,4 +1,5 @@
-module Main where
+{-# OPTIONS_GHC -Wno-unused-top-binds #-}
+module Temperature (temperature) where
 
 --hasktorch
 import Torch.Tensor (asValue)
@@ -31,39 +32,35 @@ parseData path = unsafePerformIO $ do
 
 -- temperature of the 7 last days to predict the temperature of the next day
 trainingData :: [([Float],Float)]
-trainingData = parseData "data/train.csv"
+trainingData = parseData "app/temperature/data/train.csv"
 
 testData :: [([Float],Float)]
-testData = parseData "data/valid.csv"
+testData = parseData "app/temperature/data/valid.csv"
 
 createModel :: Device -> LinearHypParams
 createModel device = LinearHypParams device True 7 1
 
-main :: IO()
-main = do
+temperature :: IO()
+temperature = do
     -- parse training data and print the first 5
-    -- print $ take 5 (parseData "data/valid.csv")
-    -- print $ take 5 (parseData "data/train.csv")
+    print $ take 5 (parseData "app/temperature/data/valid.csv")
+    print $ take 5 (parseData "app/temperature/data/train.csv")
     model <- initModel
     ((trainedModel,_),losses) <- mapAccumM [1..numIters] (model,optimizer) $ \epoc (model,opt) -> do
         let batchLoss = foldLoop trainingData zeroTensor $ \(input,output) loss ->
                             let y' = linearLayer model $ asTensor'' device input
                                 y = asTensor'' device output
                             in add loss $ mseLoss y y'
-            lossValue = (asValue batchLoss)::Float
+            lossValue = asValue batchLoss::Float
         showLoss 1 epoc lossValue
-        u <- update model opt batchLoss 9e-11  
+        u <- update model opt batchLoss 1e-9
         let (updatedModel, updatedOptimizer) = u
         return ((updatedModel, updatedOptimizer), lossValue)
-    saveParams trainedModel "regression.model"
-    drawLearningCurve "graph-reg.png" "Learning Curve" [("",reverse losses)]
-
+    saveParams trainedModel "app/temperature/models/temp-model.pt"
+    drawLearningCurve "app/temperature/curves/graph-avg.png" "Learning Curve" [("",reverse losses)]
 
     where
-    -- batchSize = 1
     optimizer = GD
-    numIters = 200
-    -- numFeatures = 3
+    numIters = 300
     device = Device CPU 0
     initModel = sample $ createModel device
-    

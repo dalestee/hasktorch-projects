@@ -1,5 +1,10 @@
 .stack-work/
 *~
 app/titanic-mlp/models/
+app/titanic-mlp/data/
 app/cifar/data/
 app/cifar/models/
+app/linearRegression/data/
+app/linearRegression/models/
+app/temperature/data/
+app/temperature/models/

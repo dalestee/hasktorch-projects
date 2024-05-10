@@ -33,6 +33,7 @@ library
       Titanic
       LinearRegression
       Cifar
+      Temperature
   other-modules:
       Paths_hasktorch_projects
   autogen-modules:
@@ -42,6 +43,7 @@ library
       app/titanic-mlp
       app/linearRegression
       app/cifar
+      app/temperature
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       JuicyPixels

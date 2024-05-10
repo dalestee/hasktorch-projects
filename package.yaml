@@ -48,6 +48,7 @@ library:
     - app/titanic-mlp
     - app/linearRegression
     - app/cifar
+    - app/temperature
 
 executables:
   hasktorch-projects-exe:
