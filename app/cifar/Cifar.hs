@@ -21,7 +21,7 @@ import MultClassEvaluation (accuracy, confusionMatrix, confusionMatrix', f1Macro
 import Func (argmax)
 
 -- image processing
-import ImageToList (loadImages, loadImagesNoLabels)
+import ImageToList (loadImages)
 
 --hasktorch
 import Data.List()
@@ -39,10 +39,6 @@ import Control.Monad (when)
 import System.Random (newStdGen)
 import System.Random.Shuffle (shuffle')
 
--- other libraries for parsing
--- import System.IO.Unsafe (unsafePerformIO)
--- import Data.List.Split (splitOn)
-
 --nlp-tools
 import ML.Exp.Chart (drawLearningCurve)
 
@@ -59,7 +55,6 @@ randomizeData data' = do
 --------------------------------------------------------------------------------
 
 loss :: MLPParams -> Dim -> (Tensor, Tensor) -> Tensor
--- dim is the number of classes to be predicted
 loss model dim (input, output) =
     let y = forward model dim input
     in mseLoss y output
@@ -186,13 +181,15 @@ cifar = do
 
     where
         numEpochs = 10000 :: Int
-        numImages = 10000 :: Int
+        numImages = 30000 :: Int
+
         device = Device CPU 0
         -- 32x32 images
         -- ResNet-152
         -- hyperParams = MLPHypParams device 3072 [(2048, Relu), (1024, Relu), (512, Relu), (256, Relu), (128, Relu), (64, Relu), (32, Relu), (16, Relu), (8, Relu), (4, Relu), (2, Relu), (10, Id)] -- very slow to learn can't know if is effective
         hyperParams = MLPHypParams device 3072 [(256, Relu), (256, Relu), (10, Id)] -- not very effective but faster to learn
         -- hyperParams = MLPHypParams device 3072 [(380, Relu), (160, Relu), (80, Relu), (40, Relu), (20, Relu), (10, Id)]
+
         -- betas are decaying factors Float, m's are the first and second moments [Tensor] and iter is the iteration number Int
         itr = 0
         beta1 = 0.9 :: Float
