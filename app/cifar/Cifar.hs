@@ -17,7 +17,7 @@
 module Cifar (cifar) where
 
 -- data
-import MultClassEvaluation (accuracy, confusionMatrix, confusionMatrix', f1Macro, f1Micro, f1Weighted, avarage, variance)
+import MultClassEvaluation (accuracy, confusionMatrix, f1Macro, f1Micro, f1Weighted, avarage, variance)
 import Func (argmax)
 
 -- image processing
@@ -71,15 +71,15 @@ prediction output = classes !! argmax (asValue output)
 
 evaluation :: MLPParams ->[(Tensor, Tensor)] -> IO()
 evaluation model dataset = do
-    newConfusionMatrix <- confusionMatrix' model dataset
-    accuracy' <- accuracy newConfusionMatrix
-    f1Micro <- f1Micro newConfusionMatrix
-    f1Macro <- f1Macro newConfusionMatrix
-    f1Weighted <- f1Weighted newConfusionMatrix
+    let newConfusionMatrix = confusionMatrix model dataset
+    let accuracy' = accuracy newConfusionMatrix
+    let f1MicroResult = f1Micro newConfusionMatrix
+    let f1MacroResult = f1Macro newConfusionMatrix
+    let f1WeightedResult = f1Weighted newConfusionMatrix
     putStrLn $ "Accuracy: " ++ show accuracy'
-    putStrLn $ "F1 Micro: " ++ show f1Micro
-    putStrLn $ "F1 Macro: " ++ show f1Macro
-    putStrLn $ "F1 Weighted: " ++ show f1Weighted
+    putStrLn $ "F1 Micro: " ++ show f1MicroResult
+    putStrLn $ "F1 Macro: " ++ show f1MacroResult
+    putStrLn $ "F1 Weighted: " ++ show f1WeightedResult
 
 cifar :: IO ()
 cifar = do
@@ -129,20 +129,20 @@ cifar = do
 -- Validation
 --------------------------------------------------------------------------------
 
-    -- putStrLn "Validation"
+    putStrLn "Validation"
 
-    -- evaluation trained validationData
+    evaluation trained validationData
 
 --------------------------------------------------------------------------------
 -- Test
 --------------------------------------------------------------------------------
 
-    putStrLn "Test"
+    -- putStrLn "Test"
 
-    imagesTest <- loadImages 1000 "app/cifar/data/testData"
-    let testData = map (\(label, img) -> (asTensor img, asTensor label)) imagesTest
+    -- imagesTest <- loadImages 1000 "app/cifar/data/testData"
+    -- let testData = map (\(label, img) -> (asTensor img, asTensor label)) imagesTest
 
-    evaluation trained trainingData
+    -- evaluation trained trainingData
 
 --------------------------------------------------------------------------------
 -- kaggle submission
@@ -159,9 +159,9 @@ cifar = do
 
     -- putStrLn "Predicting test data..."
 
-    -- -- indexes
-    -- -- airplane = 0, automobile = 1, bird = 2, cat = 3, deer = 4, dog = 5, frog = 6, horse = 7, ship = 8, truck = 9
-    -- -- write csvfile (id, prediction) ex: (1, cat) if the prediction is 3
+    -- indexes
+    -- airplane = 0, automobile = 1, bird = 2, cat = 3, deer = 4, dog = 5, frog = 6, horse = 7, ship = 8, truck = 9
+    -- write csvfile (id, prediction) ex: (1, cat) if the prediction is 3
 
     -- let outputs = map (\img -> (img, mlpLayer model (asTensor img))) imagesResults
     -- let outputs' = zipWith (\id (_, output) -> (id, prediction output)) [1..] outputs
