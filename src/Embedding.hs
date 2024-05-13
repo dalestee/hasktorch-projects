@@ -73,7 +73,7 @@ main = do
   print wordlst
 
   -- create embedding(wordDim × wordNum)
-  let embsddingSpec = EmbeddingSpec {wordNum = 9, wordDim = length wordlst}
+  let embsddingSpec = EmbeddingSpec {wordNum = length wordlst, wordDim = 100}
   wordEmb <- makeIndependent $ toyEmbedding embsddingSpec
   let emb = Embedding { wordEmbedding = wordEmb }
 
@@ -87,13 +87,9 @@ main = do
   let initEmb = Embedding {wordEmbedding = initWordEmb}
   loadedEmb <- loadParams initEmb modelPath
 
-  let sampleTxt = B.pack $ encode "This is awesome.\nmodel is developing"
+  let sampleTxt = B.pack $ encode "i love playing tapped out because it is fun to watch the town grow by earning"
   -- convert word to index
       idxes = map (map wordToIndex) (preprocess sampleTxt)
   -- convert to embedding
-      flatIdxes = concat idxes
-      validIdxes = filter (< (size 0 $ toDependent $ wordEmbedding loadedEmb)) flatIdxes
-      embTxt = embedding' (toDependent $ wordEmbedding loadedEmb) (asTensor validIdxes)
+      embTxt = embedding' (toDependent $ wordEmbedding loadedEmb) (asTensor idxes)
   print embTxt
-
-  -- test
