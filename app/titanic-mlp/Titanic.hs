@@ -90,7 +90,7 @@ titanic = do
 
     -- validation
 
-    (tp, tn, fp, fn) <- extractBinary modelName validationData hyperParams
+    let (tp, tn, fp, fn) = extractBinary validationData model
     putStrLn $ "True Positives: " ++ show tp
     putStrLn $ "True Negatives: " ++ show tn
     putStrLn $ "False Positives: " ++ show fp

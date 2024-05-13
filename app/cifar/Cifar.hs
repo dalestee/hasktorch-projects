@@ -129,20 +129,20 @@ cifar = do
 -- Validation
 --------------------------------------------------------------------------------
 
-    -- putStrLn "Validation"
+    putStrLn "Validation"
 
-    -- evaluation trained validationData
+    evaluation trained validationData
 
 --------------------------------------------------------------------------------
 -- Test
 --------------------------------------------------------------------------------
 
-    putStrLn "Test"
+    -- putStrLn "Test"
 
-    imagesTest <- loadImages 1000 "app/cifar/data/testData"
-    let testData = map (\(label, img) -> (asTensor img, asTensor label)) imagesTest
+    -- imagesTest <- loadImages 1000 "app/cifar/data/testData"
+    -- let testData = map (\(label, img) -> (asTensor img, asTensor label)) imagesTest
 
-    evaluation trained trainingData
+    -- evaluation trained trainingData
 
 --------------------------------------------------------------------------------
 -- kaggle submission
@@ -170,7 +170,7 @@ cifar = do
     
     -- writeFile "app/cifar/data/submission.csv" $ unlines $ map (\(img, output) -> show img ++ "," ++ output) outputs'
 
-    putStrLn "Done."
+    -- putStrLn "Done."
 
     where
         numEpochs = 0 :: Int

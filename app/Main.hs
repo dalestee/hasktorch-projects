@@ -10,7 +10,7 @@ main :: IO ()
 main = do
     args <- getArgs
     case args of
-        ["titanic-mlp"] -> titanic
+        ["titanic"] -> titanic
         ["linear"] -> linear
         ["cifar"] -> cifar
         ["temperature"] -> temperature
