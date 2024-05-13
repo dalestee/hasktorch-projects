@@ -30,6 +30,7 @@ library
       ImageToList
       Lib
       MultClassEvaluation
+      TextToGraph
       Titanic
       LinearRegression
       Cifar

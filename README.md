@@ -1,8 +1,26 @@
 # Hasktorch Projects
 
 ## Setup
+- Install [Stack](https://docs.haskellstack.org/en/stable/README/).
+- Clone   [Hasktorch](https://github.com/hasktorch/hasktorch.git).
+- Clone   [Hasktorch-tools](https://github.com/DaisukeBekki/hasktorch-tools.git).
 - Change the torch paths in `stack.yaml` to the correct paths on your system.
+- Configure .bashrc
+  **Add to your .bashrc:**
+    ```bash
+    HASKTORCH="~/.local/lib/hasktorch"
+    ```
 
+  **In the cloned Hasktorch repository, write this series of command into the terminal:**
+    ```bash
+    source setenv
+    cat $LD_LIBRARY_PATH
+    ```
+  
+  **and copy the output and add it to your .bashrc like this:**
+    ```bash
+    export LD_LIBRARY_PATH=<LD_LIBRARY_PATH that you copied>
+    ```
 for linear **regression**:
 ```bash
 stack run linear
@@ -59,8 +77,8 @@ stack run titanic
   - Training Set:    0.79904
 
 ## Cifar
-- You can find the Titanic dataset [here](https://github.com/hasktorch/hasktorch/blob/master/hasktorch/src/Torch/Vision.hs).
-- You can find the Titanic competition [here](https://www.kaggle.com/competitions/cifar-10).
+- You can find the cifar dataset [here](https://github.com/hasktorch/hasktorch/blob/master/hasktorch/src/Torch/Vision.hs).
+- You can find the cifar competition [here](https://www.kaggle.com/competitions/cifar-10).
 
 **Hyperparameters:**
 - **Input Layer:**   3074
@@ -68,18 +86,17 @@ stack run titanic
 - **Output Layer:**  256
 - **Learning Rate:** 0.001
 
-**Evaluation Scores**
-- **F1 Macro:**    0.5002183
-- **F1 Weighted:** 0.50021833
-They are equal because there are equal amount of data between all classes
 
 ### Learning Curves
-- Saddly I couldn't generate this learning curve as it crashed -- To be fixed
+- **Adam Optimizer:**
+  ![Cifar Learning Curve with Adam Optimizer](/app/cifar/curves/lossCifar256x256.png)
 
 ### Accuracy
 - **Adam Optimizer:**
   - Kaggle Test Set: 0.51180
-  - Training Set:    0.6722237
+  - Test Set:            
+      Accuracy: 0.7497333
+      F1 Macro: 0.7496672
 
 ## Observations
 For Multi-class classification it is optimal to feed the data randomly to the model when training

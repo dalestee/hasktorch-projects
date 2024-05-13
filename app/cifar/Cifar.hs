@@ -21,7 +21,7 @@ import MultClassEvaluation (accuracy, confusionMatrix, confusionMatrix', f1Macro
 import Func (argmax)
 
 -- image processing
-import ImageToList (loadImages)
+import ImageToList (loadImages, loadImagesNoLabels)
 
 --hasktorch
 import Data.List()
@@ -92,8 +92,8 @@ cifar = do
     let trainingData = map (\(label, img) -> (asTensor img, asTensor label)) trainingRImages
     let validationData = map (\(label, img) -> (asTensor img, asTensor label)) validationRImages
     putStrLn $ "Training data size: " ++ show (length trainingData)
-    -- init <- loadParams hyperParams "app/cifar/models/model-cifar-750_51Acc.pt" -- comment if you want to train from scratch
-    init <- sample hyperParams -- comment if you want to load a model
+    init <- loadParams hyperParams "app/cifar/models/model-cifar-256x2563850.pt" -- comment if you want to train from scratch
+    -- init <- sample hyperParams -- comment if you want to load a model
     let opt = mkAdam itr beta1 beta2 (flattenParameters init)
     (trained, _, losses) <- foldLoop (init, opt, []) numEpochs $ \(model, optimizer, losses) i -> do
         let epochLoss = sum (map (loss model dim) trainingData)
@@ -101,7 +101,7 @@ cifar = do
             print ("Epoch: " ++ show i ++ " | Loss: " ++ show (asValue epochLoss :: Float))     
         when (i `mod` 50 == 0) $ do
             print ("Epoch: " ++ show i ++ " | Validation")
-            let modelName = "app/cifar/models/model-cifar-256x256" ++ show i ++ ".pt"
+            let modelName = "app/cifar/models/model-cifar-256x256-" ++ show i ++ ".pt"
             saveParams model modelName
             evaluation model validationData
         (newState, newOpt) <- update model optimizer epochLoss lr
@@ -112,26 +112,26 @@ cifar = do
 -- -- Saving
 -- --------------------------------------------------------------------------------
 
-    let maybeLastLoss = if null losses then Nothing else Just (last losses)
-    case maybeLastLoss of
-        Nothing -> return ()
-        Just lastLoss -> do
-            let filename = "app/cifar/curves/graph-cifar-mse" ++ show lastLoss ++ ".png"
-            drawLearningCurve filename "Learning Curve" [("", losses)]
+    -- let maybeLastLoss = if null losses then Nothing else Just (last losses)
+    -- case maybeLastLoss of
+    --     Nothing -> return ()
+    --     Just lastLoss -> do
+    --         let filename = "app/cifar/curves/graph-cifar-mse" ++ show lastLoss ++ ".png"
+    --         drawLearningCurve filename "Learning Curve" [("", losses)]
 
-    let modelName = "app/cifar/models/model-cifar-" ++ -- uncomment if you want to save the model
-                     -- uncomment if you want to save the model
-                    (if null losses then "noLosses" else show (last losses)) ++ ".pt" -- uncomment if you want to save the model
-    -- let modelName = "app/titanic-mlp/models/model-titanic-129.70596_Adam.pt" -- comment if you want to train from scratch
-    saveParams trained modelName
+    -- let modelName = "app/cifar/models/model-cifar-" ++ -- uncomment if you want to save the model
+    --                  -- uncomment if you want to save the model
+    --                 (if null losses then "noLosses" else show (last losses)) ++ ".pt" -- uncomment if you want to save the model
+    -- -- let modelName = "app/titanic-mlp/models/model-titanic-129.70596_Adam.pt" -- comment if you want to train from scratch
+    -- saveParams trained modelName
 
 --------------------------------------------------------------------------------
 -- Validation
 --------------------------------------------------------------------------------
 
-    putStrLn "Validation"
+    -- putStrLn "Validation"
 
-    evaluation trained validationData
+    -- evaluation trained validationData
 
 --------------------------------------------------------------------------------
 -- Test
@@ -151,7 +151,7 @@ cifar = do
     -- putStrLn "Predicting test data..."
     -- putStrLn "Loading model..."
 
-    -- model <- loadParams hyperParams "app/cifar/models/model-cifar-750_51Acc.pt"
+    -- model <- loadParams hyperParams "app/cifar/models/model-cifar-256x2563850.pt"
 
     -- putStrLn "Loading test data..."
 
@@ -173,8 +173,8 @@ cifar = do
     -- putStrLn "Done."
 
     where
-        numEpochs = 10000 :: Int
-        numImages = 30000 :: Int
+        numEpochs = 0 :: Int
+        numImages = 50000 :: Int
 
         device = Device CPU 0
         -- 32x32 images
