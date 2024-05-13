@@ -2,22 +2,24 @@
 {-# HLINT ignore "Use tuple-section" #-}
 module ImageToList (imageToRgb, loadImages, loadImagesNoLabels) where
 
-import Codec.Picture         (readImage, pixelAt, PixelRGB8(..), convertRGB8, Image(..))
+import Codec.Picture         (readImage, pixelAt, PixelRGB8(..), convertRGB8, Image(..), DynamicImage, DynamicImage(ImageRGB8))
 import Text.Printf           (printf)
 import Control.Monad         (forM)
 
-imageToRgb :: FilePath -> IO [Float]
-imageToRgb fp = do
-    eimg <- readImage fp
-    case eimg of
-        Left err -> do
-            putStrLn ("Error loading image: " ++ err)
-            return []
-        Right img -> do
-            let img' = convertRGB8 img
-            let (Image width height _) = img'
-            let pixels = [pixelAt img' x y | x <- [0..width-1], y <- [0..height-1]]
-            return $ concatMap (\(PixelRGB8 r g b) -> [fromIntegral r / 255.0, fromIntegral g / 255.0, fromIntegral b / 255.0]) pixels
+imageToRgb :: DynamicImage -> [Float]
+imageToRgb dynamicImage =
+    case dynamicImage of
+        ImageRGB8 image -> imageToRgbList image
+        _ -> error "Unsupported image format"
+
+imageToRgbList :: Image PixelRGB8 -> [Float]
+imageToRgbList image = do
+    let width = imageWidth image
+    let height = imageHeight image
+    let pixels = [ pixelAt image x y | y <- [0..height-1], x <- [0..width-1] ]
+    let rgb = map (\(PixelRGB8 r g b) -> [fromIntegral r, fromIntegral g, fromIntegral b]) pixels
+    concat rgb
+
 
 loadImages :: Int -> FilePath -> IO [([Float], [Float])]
 loadImages sizeFolders fp = do
@@ -26,7 +28,9 @@ loadImages sizeFolders fp = do
     images <- forM (zip labels [0..]) $ \(label, idx) -> do
         let folder = fp ++ "/" ++ label
         let paths = map (\i -> folder ++ "/" ++ printf "%04d" (i :: Int) ++ ".png") [1..sizeFolders]
-        images <- mapM imageToRgb paths
+        images <- forM paths $ \path -> do
+            image <- readImage path
+            either (error . show) (return . imageToRgb) image
         return $ map (\img -> (oneHot 10 idx, img)) images
     return $ concat images
   where
@@ -39,9 +43,9 @@ loadImagesNoLabels sizeFolder fp = do
     putStrLn "Loading data..."
     forM [1..sizeFolder] $ \i -> do
         let path = fp ++ "/" ++ show (i :: Int) ++ ".png"
-        imageToRgb path
+        either (error . show) imageToRgb <$> readImage path
 
 -- main :: IO ()
 -- main = do
---     result <- imageToRgb "app/cifar/data/trainData/airplane/0001.png"
+--     result <- either (error . show) imageToRgb <$> readImage "app/cifar/data/trainData/airplane/0001.png"
 --     print result
