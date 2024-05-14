@@ -54,6 +54,7 @@ library
       JuicyPixels
     , base >=4.7 && <5
     , bytestring
+    , containers
     , filepath
     , hasktorch
     , hasktorch-tools
@@ -62,6 +63,7 @@ library
     , random-shuffle
     , split
     , text
+    , utf8-string
     , vector
   default-language: Haskell2010
 
@@ -78,6 +80,7 @@ executable hasktorch-projects-exe
       JuicyPixels
     , base >=4.7 && <5
     , bytestring
+    , containers
     , filepath
     , hasktorch
     , hasktorch-projects
@@ -87,6 +90,7 @@ executable hasktorch-projects-exe
     , random-shuffle
     , split
     , text
+    , utf8-string
     , vector
   default-language: Haskell2010
 
@@ -104,6 +108,7 @@ test-suite hasktorch-projects-test
       JuicyPixels
     , base >=4.7 && <5
     , bytestring
+    , containers
     , filepath
     , hasktorch
     , hasktorch-projects
@@ -113,5 +118,6 @@ test-suite hasktorch-projects-test
     , random-shuffle
     , split
     , text
+    , utf8-string
     , vector
   default-language: Haskell2010

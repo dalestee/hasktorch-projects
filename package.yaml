@@ -32,6 +32,8 @@ dependencies:
 - vector
 - bytestring
 - text
+- containers
+- utf8-string
 
 ghc-options:
 - -Wall

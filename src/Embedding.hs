@@ -3,7 +3,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE StandaloneDeriving #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use newtype instead of data" #-}
 
 module Embedding (main) where
 import Codec.Binary.UTF8.String (encode) -- add utf8-string to dependencies in package.yaml
@@ -17,13 +18,15 @@ import Torch.Autograd (makeIndependent, toDependent)
 import Torch.Functional (embedding')
 import Torch.NN (Parameterized(..), Parameter)
 import Torch.Serialize (saveParams, loadParams)
-import Torch.Tensor (Tensor, asTensor)
+import Torch.Tensor ( Tensor, asTensor )
 import Torch.TensorFactories (eye', zeros')
-import Torch.Tensor (size)
 
 -- your text data (try small data first)
-textFilePath = "app/word2vec/data/lorem.txt"
+textFilePath :: String
+textFilePath = "app/word2vec/data/review-texts.txt"
+modelPath :: String
 modelPath =  "app/word2vec/models/sample_model.pt"
+wordLstPath :: String
 wordLstPath = "app/word2vec/data/sample_wordlst.txt"
 
 data EmbeddingSpec = EmbeddingSpec {
@@ -36,10 +39,10 @@ data Embedding = Embedding {
   } deriving (Show, Generic, Parameterized)
 
 
-isUnncessaryChar :: 
+isUnncessaryChar ::
   Word8 ->
   Bool
-isUnncessaryChar str = str `elem` (map (head . encode)) [".", "!"]
+isUnncessaryChar str = str `elem` map (head . encode) [".", "!"]
 
 preprocess ::
   B.ByteString -> -- input
@@ -57,7 +60,7 @@ wordToIndexFactory wordlst wrd = M.findWithDefault (length wordlst) wrd (M.fromL
 toyEmbedding ::
   EmbeddingSpec ->
   Tensor           -- embedding
-toyEmbedding EmbeddingSpec{..} = 
+toyEmbedding EmbeddingSpec{..} =
   eye' wordNum wordDim
 
 
@@ -70,18 +73,20 @@ main = do
   let wordLines = preprocess texts
       wordlst = nub $ concat wordLines
       wordToIndex = wordToIndexFactory wordlst
-  print wordlst
+  -- print wordlst
 
   -- create embedding(wordDim × wordNum)
-  let embsddingSpec = EmbeddingSpec {wordNum = length wordlst, wordDim = 100}
+  let embsddingSpec = EmbeddingSpec {wordNum = length wordlst, wordDim = 2}
   wordEmb <- makeIndependent $ toyEmbedding embsddingSpec
   let emb = Embedding { wordEmbedding = wordEmb }
+
+  putStrLn "Finish creating embedding"
 
   -- save params
   saveParams emb modelPath
   -- save word list
   B.writeFile wordLstPath (B.intercalate (B.pack $ encode "\n") wordlst)
-  
+
   -- load params
   initWordEmb <- makeIndependent $ zeros' [1]
   let initEmb = Embedding {wordEmbedding = initWordEmb}
