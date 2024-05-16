@@ -5,6 +5,9 @@
 {-# OPTIONS_GHC -Wno-unused-local-binds #-}
 {-# OPTIONS_GHC -Wno-unused-matches #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 
 module Word2vec (word2vec) where
 import Codec.Binary.UTF8.String (encode) -- add utf8-string to dependencies in package.yaml
@@ -18,17 +21,27 @@ import Torch.Autograd (makeIndependent, toDependent)
 import Torch.Functional( mseLoss, softmax, Dim(..), mseLoss, softmax, Dim(..) )
 import Torch.NN( Parameterized(..), Parameter, flattenParameters, sample )
 import Torch.Serialize (saveParams, loadParams)
-import Torch.Tensor ( Tensor, asTensor, Tensor, asTensor, asValue )
+import Torch.Tensor
+    ( Tensor,
+      asTensor,
+      asValue,
+      shape,
+      dtype,
+      device,
+      shape,
+      dtype,
+      device )
 import Torch.TensorFactories (eye', zeros')
 import Debug.Trace (traceShow)
 
 import ML.Exp.Chart (drawLearningCurve)
 
 --hasktorch
-import Torch.Optim          (foldLoop, mkAdam)
-import Torch.Device         (Device(..),DeviceType(..))
-import Torch.Train          (update)
+import Torch.Optim (foldLoop, mkAdam)
+import Torch.Device(Device(..), DeviceType(..))
+import Torch.Train (update)
 import Torch.Layer.MLP (MLPHypParams(..), ActName(..), mlpLayer, MLPParams)
+import Torch.DType (DType(..), DType(..) )
 
 import Control.Monad (when)
 import Prelude hiding (init)
@@ -37,8 +50,12 @@ import Data.ByteString (ByteString, length)
 import Data.ByteString.Char8 (pack)
 import Data.ByteString.Lazy (fromStrict)
 import Data.Ord (comparing, Down (Down))
+import Torch.Typed (TensorListFold(TensorListFold))
 
-
+data EmbeddingSpec = EmbeddingSpec {
+  wordNum :: Int, -- the number of words
+  wordDim :: Int  -- the dimention of word embeddings
+} deriving (Show, Eq, Generic)
 
 isUnncessaryChar ::
   Word8 ->
@@ -75,20 +92,29 @@ setAt :: Int -> a -> [a] -> [a]
 setAt idx val lst = take idx lst ++ [val] ++ drop (idx + 1) lst
 
 oneHotEncode :: Int -> Int -> Tensor
-oneHotEncode index size
-  | index < size = asTensor $ setAt index (1.0 :: Float) (replicate size (0 :: Float))
-  | otherwise = asTensor $ replicate size (0 :: Float)
-
-initDataSets :: [Int] -> B.ByteString -> [(Tensor, Tensor)]
-initDataSets indexlst texts = zip input output
+oneHotEncode index size = asTensor $ setAt index 1 (zeros :: [Float])
   where
-      wordLines = preprocess texts
-      dictLength = Prelude.length indexlst
-      allwordslst = concat wordLines
-      wordlst = take dictLength $ nub $ concat wordLines
-      wordToIndex = wordToIndexFactory wordlst
-      input = take dictLength $ [oneHotEncode (wordToIndex word) dictLength | word <- init allwordslst]
-      output = take dictLength $ [oneHotEncode (wordToIndex word) dictLength | word <- tail allwordslst]
+    zeros = replicate size 0
+
+initDataSets :: [[B.ByteString]] -> [B.ByteString] -> [(Tensor, Tensor)]
+initDataSets wordLines wordlst = zip input output
+  where
+      dictLength = Prelude.length wordlst
+      wordToIndex = wordToIndexFactory $ nub wordlst
+      wordsByOccurence = take (dictLength `div` 20) $ sortByOccurence $ concat wordLines
+      filteredWordlst = filter (`elem` wordsByOccurence) wordlst
+      input = [oneHotEncode (wordToIndex word) dictLength | word <- init filteredWordlst]
+      output = [oneHotEncode (wordToIndex word) dictLength | word <- tail filteredWordlst]
+
+getTopWords :: B.ByteString -> (B.ByteString -> Int) -> MLPParams -> Dim -> Int -> [B.ByteString] -> [(B.ByteString, Float)]
+getTopWords word wordToIndex loadedEmb dim numWords wordlst = top10Words
+  where
+    wordIndex = wordToIndex word
+    input = oneHotEncode wordIndex numWords
+    output = forward loadedEmb dim input
+    wordOutputed = M.toList $ M.fromList $ zip wordlst (asValue output :: [Float])
+    sortedWords = sortBy (comparing (Down . snd)) wordOutputed
+    top10Words = take 10 sortedWords
 
 word2vec :: IO ()
 word2vec = do
@@ -101,19 +127,21 @@ word2vec = do
 
   -- create word lst (unique)
   let wordLines = preprocess texts
-      allwordslst = take numWords $ sortByOccurence $ concat wordLines
-      wordlst = take numWords $ nub $ concat wordLines
-      wordToIndex = wordToIndexFactory wordlst
+  let wordlst = take numWords $ concat wordLines
+  let wordToIndex = wordToIndexFactory $ nub wordlst
+  let indexesOfwordlst = map wordToIndex wordlst
+
+  -- print $ "Word list: " ++ show wordlst
+  -- print $ "Indexes of word list: " ++ show indexesOfwordlst
   -- print wordLines
-  -- print allwordslst
   putStrLn ("Training data size: " ++ show (Prelude.length wordlst))
   -- create embedding(mlp with wordDim × wordNum)
 
   putStrLn "Finish creating embedding"
 
-  let trainingData = initDataSets (map wordToIndex allwordslst) texts
+  let trainingData = initDataSets wordLines wordlst
 
-  print $ take 1 trainingData
+  -- print $ "Training data: " ++ show trainingData
 
   --------------------------------------------------------------------------------
   -- Training
@@ -139,7 +167,7 @@ word2vec = do
   -- save params
   saveParams trained modelPath
   -- save word list
-  B.writeFile wordLstPath (B.intercalate (B.pack $ encode "\n") allwordslst)
+  B.writeFile wordLstPath (B.intercalate (B.pack $ encode "\n") wordlst)
 
   --------------------------------------------------------------------------------
   -- Testing
@@ -148,24 +176,25 @@ word2vec = do
   -- load params
   loadedEmb <- loadParams initEmb modelPath
 
-  let word = fromStrict $ pack "good"
-      wordIndex = wordToIndex word
-      input = oneHotEncode wordIndex numWords
-      output = forward loadedEmb dim input
-      wordOutputed = M.toList $ M.fromList $ zip allwordslst (asValue output :: [Float])
-      sortedWords = sortBy (comparing (Data.Ord.Down . snd)) wordOutputed
-      top10Words = take 10 sortedWords
+  -- print $ "Params: " ++ show (flattenParameters loadedEmb)
+
+  let word = B.fromStrict $ pack "mcaffee"
+  let top10Words = getTopWords word wordToIndex loadedEmb dim numWords wordlst
 
   print $ "Word: " ++ show word
   print $ "Output: " ++ show top10Words
 
+  -- accuracy on treining data
+
+  
+
   where
-    numEpochs = 100 :: Int
-    numWords = 10000 :: Int
-    wordDim = 2
+    numEpochs = 300 :: Int
+    numWords = 770 :: Int
+    wordDim = 8 :: Int
 
     textFilePath :: String
-    textFilePath = "app/word2vec/data/review-texts.txt"
+    textFilePath = "app/word2vec/data/lorem.txt"
     modelPath :: String
     modelPath =  "app/word2vec/models/sample_model.pt"
     wordLstPath :: String
@@ -175,8 +204,8 @@ word2vec = do
     hyperParams = MLPHypParams device numWords [(wordDim, Relu), (numWords, Id)]
 
     -- betas are decaying factors Float, m's are the first and second moments [Tensor] and iter is the iteration number Int
-    itr = 0
+    itr = 0 :: Int
     beta1 = 0.9 :: Float
     beta2 = 0.999 :: Float
-    lr = 1e-1
+    lr = 1e-1 :: Tensor
     dim = Dim (-1) :: Dim
