@@ -30,6 +30,7 @@ library
       ImageToList
       Lib
       MultClassEvaluation
+      PCA
       TextToGraph
       TextTreatment
       Titanic
@@ -57,6 +58,7 @@ library
     , filepath
     , hasktorch
     , hasktorch-tools
+    , hmatrix
     , nlp-tools
     , random
     , random-shuffle
@@ -84,6 +86,7 @@ executable hasktorch-projects-exe
     , hasktorch
     , hasktorch-projects
     , hasktorch-tools
+    , hmatrix
     , nlp-tools
     , random
     , random-shuffle
@@ -112,6 +115,7 @@ test-suite hasktorch-projects-test
     , hasktorch
     , hasktorch-projects
     , hasktorch-tools
+    , hmatrix
     , nlp-tools
     , random
     , random-shuffle

@@ -1,7 +1,6 @@
 module MultClassEvaluation (accuracy, confusionMatrix, f1Macro, f1Micro, f1Weighted, fp, tp, fn, avarage, variance) where
 
-import Torch.Train        (loadParams)
-import Torch.Layer.MLP    (mlpLayer, MLPHypParams(..), MLPParams)
+import Torch.Layer.MLP    (mlpLayer, MLPParams)
 import Torch.Tensor       (asValue, Tensor)
 import Func (argmax)
 
@@ -80,4 +79,4 @@ avarage :: [Float] -> Float
 avarage xs = sum xs / fromIntegral (length xs)
 
 variance :: [Float] -> Float
-variance xs = avarage $ map (\x -> (x - avarage xs) ^ 2) xs
+variance xs = avarage $ map (\x -> (x - avarage xs) ^ (2 :: Integer)) xs

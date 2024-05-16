@@ -112,4 +112,8 @@ Use the Confusion Matrix to analyze the data
 
 Store the loss value validation on the and the loss value on the training set to analyze the model comparing both curves
 
-when Evaluating also store the Precision and the Recall to compare to the F1 scores
+When Evaluating also store the Precision and the Recall to compare to the F1 scores
+
+Save the embedding values as parameters
+
+two techniques of tokenization: subword and part of speech
