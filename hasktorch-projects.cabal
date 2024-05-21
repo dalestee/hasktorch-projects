@@ -29,6 +29,7 @@ library
       Func
       ImageToList
       Lib
+      MatrixOp
       MultClassEvaluation
       PCA
       TextToGraph

@@ -10,43 +10,42 @@
 {-# OPTIONS_GHC -Wno-unused-imports #-}
 
 module Word2vec (word2vec) where
-import Codec.Binary.UTF8.String (encode) -- add utf8-string to dependencies in package.yaml
+import Codec.Binary.UTF8.String                ( encode) -- add utf8-string to dependencies in package.yaml
 import GHC.Generics
 import qualified Data.ByteString.Lazy as B -- add bytestring to dependencies in package.yaml
-import Data.Word (Word8)
+import Data.Word                               ( Word8)
 import qualified Data.Map.Strict as M -- add containers to dependencies in package.yaml
-import Data.List (nub, init, sortOn, sortBy, elemIndex)
+import Data.List                               ( nub, init, sortOn, sortBy, elemIndex )
 
-import Torch.Autograd (makeIndependent, toDependent)
-import Torch.Functional (mseLoss, softmax, Dim(..), mseLoss, softmax, Dim(..) )
-import Torch.NN (Parameterized(..), Parameter, flattenParameters, sample )
-import Torch.Serialize (saveParams)
-import Torch.Train ( loadParams, update )
-import Torch.Tensor (Tensor, asTensor, asValue, shape, dtype, device, shape, dtype, device)
-import Torch.TensorFactories (eye', zeros')
-import Debug.Trace (traceShow)
+import Torch.Autograd                          ( makeIndependent, toDependent )
+import Torch.Functional                        ( mseLoss, softmax, Dim(..), mseLoss, softmax, Dim(..) )
+import Torch.NN                                ( Parameterized(..), Parameter, flattenParameters, sample, Linear(..) )
+import Torch.Serialize                         ( saveParams )
+import Torch.Train                             ( loadParams, update )
+import Torch.Tensor                            ( Tensor, asTensor, asValue, shape, dtype, device, shape, dtype, device )
+import Torch.TensorFactories                   ( eye', zeros' )
+import Debug.Trace                             ( traceShow )
 
-import ML.Exp.Chart (drawLearningCurve)
+import ML.Exp.Chart                            ( drawLearningCurve )
+
+import MatrixOp (magnitude, dotProduct)
 
 --hasktorch
-import Torch.Optim (foldLoop, mkAdam)
-import Torch.Device(Device(..), DeviceType(..))
-import Torch.Layer.MLP (MLPHypParams(..), ActName(..), mlpLayer, MLPParams)
-import Torch.DType (DType(..), DType(..) )
+import Torch.Optim                             ( foldLoop, mkAdam )
+import Torch.Device                            ( Device(..), DeviceType(..) )
+import Torch.Layer.MLP                         ( MLPHypParamsNoBias(..), MLPHypParams(..), ActName(..), mlpLayer, MLPParams(..) )
+import Torch.DType                             ( DType(..), DType(..) )
 
-import Control.Monad (when)
-import Prelude hiding (init)
-import Data.Vector.Fusion.Bundle (inplace)
-import Data.ByteString (ByteString, length)
-import Data.ByteString.Char8 (pack)
-import Data.ByteString.Lazy (fromStrict)
-import Data.Ord (comparing, Down (Down))
-import Torch.Typed (TensorListFold(TensorListFold))
+import Control.Monad                           ( when )
+import Prelude hiding                          ( init )
+import Data.Vector.Fusion.Bundle               ( inplace )
+import Data.ByteString                         ( ByteString, length )
+import Data.ByteString.Char8                   ( pack )
+import Data.ByteString.Lazy                    ( fromStrict )
+import Data.Ord                                ( comparing, Down (Down) )
+import Torch.Typed                             ( TensorListFold(TensorListFold) )
+import Torch.Layer.Linear                      ( LinearParams(LinearParams) )
 
-data EmbeddingSpec = EmbeddingSpec {
-  wordNum :: Int, -- the number of words
-  wordDim :: Int  -- the dimention of word embeddings
-} deriving (Show, Eq, Generic)
 
 isUnncessaryChar ::
   Word8 ->
@@ -99,10 +98,27 @@ initDataSets wordLines wordlst = pairs
         Just idx -> replicate 4 (oneHotEncode (wordToIndex word) dictLength)
         Nothing -> []
       createOutputPairs word = case getIndex wordlst word of
-        Just idx -> map (\i -> if i >= 0 && i < Prelude.length wordlst then oneHotEncode (wordToIndex (wordlst !! i)) dictLength else zeros' [dictLength]) [idx - 1, idx - 2, idx + 1, idx + 2]
+        Just idx -> map (\i -> if i >= 0 && i < Prelude.length wordlst then oneHotEncode (wordToIndex (wordlst !! i)) dictLength else zeros' [dictLength]) [idx - 1, idx + 1, idx - 2, idx + 2]
         Nothing -> []
       getIndex lst word = elemIndex word lst
 
+-- initDataSets :: [[B.ByteString]] -> [B.ByteString] -> [(Tensor, Tensor)]
+-- initDataSets wordLines wordlst = pairs
+--   where
+--       dictLength = Prelude.length wordlst
+--       wordToIndex = wordToIndexFactory $ nub wordlst
+--       input = concatMap createInputPairs wordlst
+--       output = concatMap createOutputPairs wordlst
+--       pairs = zip input output
+--       createInputPairs word = case getIndex wordlst word of
+--         Just idx -> replicate 4 (oneHotEncode (wordToIndex word) dictLength)
+--         Nothing -> []
+--       createOutputPairs word = case getIndex wordlst word of
+--         Just idx -> if idx + 1 >= 0 && idx + 1 < Prelude.length wordlst 
+--                     then [oneHotEncode (wordToIndex (wordlst !! (idx + 1))) dictLength] 
+--                     else []
+--         Nothing -> []
+--       getIndex lst word = elemIndex word lst
 
 getTopWords :: B.ByteString -> (B.ByteString -> Int) -> MLPParams -> Dim -> Int -> [B.ByteString] -> [(B.ByteString, Float)]
 getTopWords word wordToIndex loadedEmb dim numWords wordlst = top10Words
@@ -113,6 +129,34 @@ getTopWords word wordToIndex loadedEmb dim numWords wordlst = top10Words
     wordOutputed = M.toList $ M.fromList $ zip wordlst (asValue output :: [Float])
     sortedWords = sortBy (comparing (Down . snd)) wordOutputed
     top10Words = take 10 sortedWords
+
+printOutputLayerWeights :: MLPParams -> IO ()
+printOutputLayerWeights (MLPParams layers) =
+  case reverse layers of
+    [] -> putStrLn "No layers found!"
+    ((LinearParams weight _, _):_) -> do
+      let weights = toDependent weight
+      putStrLn "Weights of the output layer:"
+      print weights
+
+getOutputLayerWeights :: Parameterized p => p -> Tensor
+getOutputLayerWeights model =
+  let linearParams = flattenParameters model
+  in case reverse linearParams of
+    [] -> asTensor ([] :: [Float])
+    (param:_) -> toDependent param
+
+-- similarity between two wordsVec
+simCosin :: [Float] -> [Float] -> Float
+simCosin vec1 vec2 = dotProduct vec1 vec2 / (magnitude vec1 * magnitude vec2)
+
+lookForMostSimilarWords :: [Float] -> [[Float]] -> [B.ByteString] -> [(B.ByteString, Float)]
+lookForMostSimilarWords wordVec wordVecs wordlst = top10Words
+  where
+    wordSim = map (simCosin wordVec) wordVecs
+    wordSimWithIndex = zip wordSim [0..]
+    sortedWords = sortBy (comparing (Down . fst)) wordSimWithIndex
+    top10Words = take 10 $ map (\(sim, idx) -> (wordlst !! idx, sim)) sortedWords
 
 word2vec :: IO ()
 word2vec = do
@@ -129,12 +173,6 @@ word2vec = do
   let wordToIndex = wordToIndexFactory $ nub wordlst
   -- let indexesOfwordlst = map wordToIndex wordlst
 
-  -- -- print $ "Word list: " ++ show wordlst
-  -- -- print $ "Indexes of word list: " ++ show indexesOfwordlst
-  -- -- print wordLines
-  -- putStrLn ("Training data size: " ++ show (Prelude.length wordlst))
-  -- -- create embedding(mlp with wordDim × wordNum)
-
   -- putStrLn "Finish creating embedding"
 
   let trainingData = initDataSets wordLines wordlst
@@ -145,8 +183,12 @@ word2vec = do
   -- Training
   --------------------------------------------------------------------------------
 
-  -- initEmb <- loadParams hyperParams "app/word2vec/models/sample_model-100.pt" -- comment if you want to train from scratch
-  initEmb <- sample hyperParams -- comment if you want to load a model
+  -- initEmb <- loadParams hyperParamsNoBias "app/word2vec/models/sample_model.pt" -- comment if you want to train from scratch
+  initEmb <- sample hyperParamsNoBias -- comment if you want to load a model
+  -- initEmb' <- sample hyperParams
+  -- print $ "ParamsNoBias: " ++ show (flattenParameters initEmb)
+  -- putStrLn "\n"
+  -- print $ "ParamsBias: " ++ show (flattenParameters initEmb')
   let opt = mkAdam itr beta1 beta2 (flattenParameters initEmb)
 
   putStrLn "Start training"
@@ -174,15 +216,21 @@ word2vec = do
   --------------------------------------------------------------------------------
 
   -- load params
-  loadedEmb <- loadParams hyperParams modelPath
+  loadedEmb <- loadParams hyperParamsNoBias modelPath
 
-  -- -- print $ "Params: " ++ show (flattenParameters loadedEmb)
+  let vectorDic :: [[Float]]
+      vectorDic = asValue $ getOutputLayerWeights loadedEmb
 
-  let word1 = B.fromStrict $ pack "youtube"
+  let word1 = B.fromStrict $ pack "apps"
   let top10Words1 = getTopWords word1 wordToIndex loadedEmb dim numWords wordlst
 
+  let wordIndex = wordToIndex word1
+  let wordVec = vectorDic !! wordIndex
+  let mostSimilarWords = lookForMostSimilarWords wordVec vectorDic wordlst
+  
   print $ "Word: " ++ show word1
-  print $ "Output: " ++ show top10Words1
+  print $ "Most similar words to " ++ show word1 ++ ": " ++ show mostSimilarWords
+  -- print $ "Output: " ++ show top10Words1
 
   print "Finish"
 
@@ -193,8 +241,8 @@ word2vec = do
   -- print $ "Accuracy: " ++ show accuracy
 
   where
-    numEpochs = 30 :: Int
-    numWords = 10000 :: Int
+    numEpochs = 200 :: Int
+    numWords = 15000 :: Int
     wordDim = 16 :: Int
 
     textFilePath :: String
@@ -206,6 +254,7 @@ word2vec = do
 
     device = Device CPU 0
     hyperParams = MLPHypParams device numWords [(wordDim, Relu), (numWords, Id)]
+    hyperParamsNoBias = MLPHypParamsNoBias hyperParams
 
     -- betas are decaying factors Float, m's are the first and second moments [Tensor] and iter is the iteration number Int
     itr = 0 :: Int

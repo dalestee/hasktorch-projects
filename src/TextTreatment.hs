@@ -33,8 +33,9 @@ removeParticuleWords filePath = do
   B.writeFile filePath (E.encodeUtf8 normalizedContent)
   where
     removeParticules text = T.unwords (Prelude.filter (\word -> not (word `Prelude.elem` (Prelude.map T.pack particules))) (T.words text))    
-    particules = ["this", "that", "the", "a", "an", "is", "are", "was", "were", "am", "be", "been", "being", "have", "has", "had", "do", "does", "did", "shall", "will", "should", "would", "may", "might", "must", "can", "could", "of", "in", "on", "at", "to", "for", "with", "about", "by", "from", "as"]
+    particules = ["this", "it", "that", "the", "a", "an", "is", "are", "was", "were", "am", "be", "been", "being", "have", "has", "had", "do", "does", "did", "shall", "will", "should", "would", "may", "might", "must", "can", "could", "of", "in", "on", "at", "to", "for", "with", "about", "by", "from", "as"]
 
 main :: IO ()
 main  = do
-  removeParticuleWords "app/word2vec/data/review-texts.txt"
+  normalizeText "app/word2vec/data/review-texts-original.txt"
+  -- removeParticuleWords "app/word2vec/data/review-texts.txt"
