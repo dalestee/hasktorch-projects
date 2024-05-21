@@ -11,7 +11,7 @@
 {-# OPTIONS_GHC -Wno-unused-local-binds #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
-module TextTreatment (textTreatment) where
+module TextTreatment (normalizeText, removeParticuleWords) where
 
 import Data.ByteString as B
 import Data.Text as T
@@ -26,7 +26,15 @@ normalizeText filePath = do
   where
     normalize text = T.toLower (T.filter (\c -> isAlpha c || isSpace c) text)
 
-textTreatment :: FilePath -> IO ()    
-textTreatment filePath = do
-  normalizeText filePath
-  putStrLn "Text treatment done"
+removeParticuleWords :: FilePath -> IO ()
+removeParticuleWords filePath = do
+  content <- B.readFile filePath
+  let normalizedContent = removeParticules (E.decodeUtf8 content)
+  B.writeFile filePath (E.encodeUtf8 normalizedContent)
+  where
+    removeParticules text = T.unwords (Prelude.filter (\word -> not (word `Prelude.elem` (Prelude.map T.pack particules))) (T.words text))    
+    particules = ["this", "that", "the", "a", "an", "is", "are", "was", "were", "am", "be", "been", "being", "have", "has", "had", "do", "does", "did", "shall", "will", "should", "would", "may", "might", "must", "can", "could", "of", "in", "on", "at", "to", "for", "with", "about", "by", "from", "as"]
+
+main :: IO ()
+main  = do
+  removeParticuleWords "app/word2vec/data/review-texts.txt"
