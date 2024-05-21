@@ -93,10 +93,27 @@ stack run titanic
 
 ### Accuracy
 - **Adam Optimizer:**
-  - Kaggle Test Set: 0.51180
-  - Test Set:            
-      Accuracy: 0.7497333
-      F1 Macro: 0.7496672
+  | Epoch | Loss     | Kaggle Accuracy | ValidData Accuracy | F1 Macro   |
+  |-------|--------- |-----------------|--------------------|------------|
+  | 50    | 3258.0178| -               | 0.4054             | 0.3384     |
+  | 550   | 2613.6038| -               | 0.4978             | 0.4967     |
+  | 1050  | 2321.2322| -               | 0.5046             | 0.5016     |
+  | 1550  | 2170.7373| -               | 0.5084             | 0.5063     |
+  | 2050  | 1906.2094| -               | 0.5088             | 0.5104     |
+  | 2550  | 1774.9410| -               | 0.5182             | 0.5184     |
+  | 3050  | 1658.4749| -               | 0.5096             | 0.5094     |
+  | 3550  | 1482.1902| -               | 0.5166             | 0.5176     |
+  | 3850  | 2347.8490| 0.5118          | 0.5100             | 0.5071     |
 
 ## Observations
 For Multi-class classification it is optimal to feed the data randomly to the model when training
+
+Use the Confusion Matrix to analyze the data
+
+Store the loss value validation on the and the loss value on the training set to analyze the model comparing both curves
+
+When Evaluating also store the Precision and the Recall to compare to the F1 scores
+
+Save the embedding values as parameters
+
+two techniques of tokenization: subword and part of speech

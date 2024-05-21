@@ -30,6 +30,11 @@ dependencies:
 - random
 - random-shuffle
 - vector
+- bytestring
+- text
+- containers
+- utf8-string
+- hmatrix
 
 ghc-options:
 - -Wall
@@ -49,6 +54,7 @@ library:
     - app/linearRegression
     - app/cifar
     - app/temperature
+    - app/word2vec
 
 executables:
   hasktorch-projects-exe:

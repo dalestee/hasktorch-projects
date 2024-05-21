@@ -8,3 +8,5 @@ app/linearRegression/data/
 app/linearRegression/models/
 app/temperature/data/
 app/temperature/models/
+app/word2vec/data/
+app/word2vec/models/
