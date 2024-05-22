@@ -117,3 +117,21 @@ When Evaluating also store the Precision and the Recall to compare to the F1 sco
 Save the embedding values as parameters
 
 two techniques of tokenization: subword and part of speech
+
+Bias are used to recognize the frequency of the words, usefull for detecting the style of the text.
+
+While removing the bias, the model will be able to detect better the meaning of the words.
+
+negative sampling: giving the model a word that is not in the context of the sentence to say that the word is not in the context of the sentence.
+
+Better to use the negative data than positive data to train the model.
+
+Transformers are used today.
+
+use pre-trained models to train the model faster.
+
+compare rnn and lstm
+
+all the words that are not in the top 1000 words are considered as unknown words.
+
+add hasBias as a paramater in MLPHyperParams

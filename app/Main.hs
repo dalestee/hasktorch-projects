@@ -6,6 +6,7 @@ import LinearRegression -- linear
 import Cifar -- cifar
 import Temperature -- temperature
 import Word2vec -- word2vec
+import Rnn -- rnn
 
 main :: IO ()
 main = do
@@ -16,4 +17,5 @@ main = do
         ["cifar"] -> cifar
         ["temperature"] -> temperature
         ["word2vec"] -> word2vec
-        _ -> putStrLn "Usage: stack run <titanic|linear|cifar|temperature|word2vec>"
+        ["rnn"] -> rnn
+        _ -> putStrLn "Usage: stack run <titanic|linear|cifar|temperature|word2vec|rnn>"

@@ -33,7 +33,7 @@ import MatrixOp (magnitude, dotProduct)
 --hasktorch
 import Torch.Optim                             ( foldLoop, mkAdam )
 import Torch.Device                            ( Device(..), DeviceType(..) )
-import Torch.Layer.MLP                         ( MLPHypParamsNoBias(..), MLPHypParams(..), ActName(..), mlpLayer, MLPParams(..) )
+import Torch.Layer.MLP                         ( MLPHypParamsBiased(..), ActName(..), mlpLayer, MLPParams(..) )
 import Torch.DType                             ( DType(..), DType(..) )
 
 import Control.Monad                           ( when )
@@ -102,6 +102,7 @@ initDataSets wordLines wordlst = pairs
         Nothing -> []
       getIndex lst word = elemIndex word lst
 
+-- only n+1
 -- initDataSets :: [[B.ByteString]] -> [B.ByteString] -> [(Tensor, Tensor)]
 -- initDataSets wordLines wordlst = pairs
 --   where
@@ -114,8 +115,8 @@ initDataSets wordLines wordlst = pairs
 --         Just idx -> replicate 4 (oneHotEncode (wordToIndex word) dictLength)
 --         Nothing -> []
 --       createOutputPairs word = case getIndex wordlst word of
---         Just idx -> if idx + 1 >= 0 && idx + 1 < Prelude.length wordlst 
---                     then [oneHotEncode (wordToIndex (wordlst !! (idx + 1))) dictLength] 
+--         Just idx -> if idx + 1 >= 0 && idx + 1 < Prelude.length wordlst
+--                     then [oneHotEncode (wordToIndex (wordlst !! (idx + 1))) dictLength]
 --                     else []
 --         Nothing -> []
 --       getIndex lst word = elemIndex word lst
@@ -157,6 +158,12 @@ lookForMostSimilarWords wordVec wordVecs wordlst = top10Words
     wordSimWithIndex = zip wordSim [0..]
     sortedWords = sortBy (comparing (Down . fst)) wordSimWithIndex
     top10Words = take 10 $ map (\(sim, idx) -> (wordlst !! idx, sim)) sortedWords
+
+wordMinusWord :: [Float] -> [Float] -> [Float]
+wordMinusWord = zipWith (-)
+
+wordPlusWord :: [Float] -> [Float] -> [Float]
+wordPlusWord = zipWith (+)
 
 word2vec :: IO ()
 word2vec = do
@@ -224,10 +231,19 @@ word2vec = do
   let word1 = B.fromStrict $ pack "apps"
   let top10Words1 = getTopWords word1 wordToIndex loadedEmb dim numWords wordlst
 
+  let word2 = wordToIndex $ B.fromStrict $ pack "mcaffee"
+  let word3 = wordToIndex $ B.fromStrict $ pack "good"
+  let word4 = wordToIndex $ B.fromStrict $ pack "bad"
+  let word2minus3 = wordPlusWord (vectorDic !! word2) (vectorDic !! word3)
+  let word2minus3plus4 = wordPlusWord (wordMinusWord (vectorDic !! word2) (vectorDic !! word3)) (vectorDic !! word4)
+  let mostSimilarWords2minus3plus4 = lookForMostSimilarWords word2minus3 vectorDic wordlst
+
+  print $ "mcaffee + good : " ++ show mostSimilarWords2minus3plus4
+
   let wordIndex = wordToIndex word1
   let wordVec = vectorDic !! wordIndex
   let mostSimilarWords = lookForMostSimilarWords wordVec vectorDic wordlst
-  
+
   print $ "Word: " ++ show word1
   print $ "Most similar words to " ++ show word1 ++ ": " ++ show mostSimilarWords
   -- print $ "Output: " ++ show top10Words1
@@ -241,8 +257,8 @@ word2vec = do
   -- print $ "Accuracy: " ++ show accuracy
 
   where
-    numEpochs = 200 :: Int
-    numWords = 15000 :: Int
+    numEpochs = 0 :: Int
+    numWords = 2000 :: Int
     wordDim = 16 :: Int
 
     textFilePath :: String
@@ -253,8 +269,12 @@ word2vec = do
     wordLstPath = "app/word2vec/data/sample_wordlst.txt"
 
     device = Device CPU 0
-    hyperParams = MLPHypParams device numWords [(wordDim, Relu), (numWords, Id)]
-    hyperParamsNoBias = MLPHypParamsNoBias hyperParams
+    hyperParamsNoBias :: MLPHypParamsBiased
+    hyperParamsNoBias = MLPHypParamsBiased {
+      devBiased = device,
+      inputDimBiased = numWords,
+      layerSpecsBiased = [(wordDim, Relu, False), (numWords, Id, False)],
+      firstLayerBias = False}
 
     -- betas are decaying factors Float, m's are the first and second moments [Tensor] and iter is the iteration number Int
     itr = 0 :: Int

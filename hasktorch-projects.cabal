@@ -39,6 +39,7 @@ library
       Cifar
       Temperature
       Word2vec
+      Rnn
   other-modules:
       Paths_hasktorch_projects
   autogen-modules:
@@ -50,6 +51,8 @@ library
       app/cifar
       app/temperature
       app/word2vec
+      app/rnn
+      app/lstm
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       JuicyPixels
