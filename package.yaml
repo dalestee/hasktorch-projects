@@ -55,6 +55,8 @@ library:
     - app/cifar
     - app/temperature
     - app/word2vec
+    - app/rnn
+    - app/lstm
 
 executables:
   hasktorch-projects-exe:
