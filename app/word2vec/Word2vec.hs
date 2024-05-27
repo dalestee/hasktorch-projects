@@ -46,7 +46,6 @@ import Data.Ord                                ( comparing, Down (Down) )
 import Torch.Typed                             ( TensorListFold(TensorListFold) )
 import Torch.Layer.Linear                      ( LinearParams(LinearParams) )
 
-
 isUnncessaryChar ::
   Word8 ->
   Bool
@@ -74,10 +73,7 @@ forward :: MLPParams -> Dim -> Tensor -> Tensor
 forward emb dim input = softmax dim output
     where
         output = mlpLayer emb input
-
-sortByOccurence :: [B.ByteString] -> [B.ByteString]
-sortByOccurence wordlst = reverse $ map fst $ sortOn snd $ M.toList $ M.fromListWith (+) [(w, 1) | w <- wordlst]
-
+        
 setAt :: Int -> a -> [a] -> [a]
 setAt idx val lst = take idx lst ++ [val] ++ drop (idx + 1) lst
 
@@ -94,32 +90,13 @@ initDataSets wordLines wordlst = pairs
       input = concatMap createInputPairs wordlst
       output = concatMap createOutputPairs wordlst
       pairs = zip input output
-      createInputPairs word = case getIndex wordlst word of
-        Just idx -> replicate 4 (oneHotEncode (wordToIndex word) dictLength)
-        Nothing -> []
-      createOutputPairs word = case getIndex wordlst word of
-        Just idx -> map (\i -> if i >= 0 && i < Prelude.length wordlst then oneHotEncode (wordToIndex (wordlst !! i)) dictLength else zeros' [dictLength]) [idx - 1, idx + 1, idx - 2, idx + 2]
-        Nothing -> []
-      getIndex lst word = elemIndex word lst
+      createInputPairs word = 
+        let idx = wordToIndex word 
+        in replicate 4 (oneHotEncode idx dictLength)
 
--- only n+1
--- initDataSets :: [[B.ByteString]] -> [B.ByteString] -> [(Tensor, Tensor)]
--- initDataSets wordLines wordlst = pairs
---   where
---       dictLength = Prelude.length wordlst
---       wordToIndex = wordToIndexFactory $ nub wordlst
---       input = concatMap createInputPairs wordlst
---       output = concatMap createOutputPairs wordlst
---       pairs = zip input output
---       createInputPairs word = case getIndex wordlst word of
---         Just idx -> replicate 4 (oneHotEncode (wordToIndex word) dictLength)
---         Nothing -> []
---       createOutputPairs word = case getIndex wordlst word of
---         Just idx -> if idx + 1 >= 0 && idx + 1 < Prelude.length wordlst
---                     then [oneHotEncode (wordToIndex (wordlst !! (idx + 1))) dictLength]
---                     else []
---         Nothing -> []
---       getIndex lst word = elemIndex word lst
+      createOutputPairs word = 
+        let idx = wordToIndex word 
+        in map (\i -> if i >= 0 && i < Prelude.length wordlst then oneHotEncode (wordToIndex (wordlst !! i)) dictLength else zeros' [dictLength]) [idx - 1, idx + 1, idx - 2, idx + 2]
 
 getTopWords :: B.ByteString -> (B.ByteString -> Int) -> MLPParams -> Dim -> Int -> [B.ByteString] -> [(B.ByteString, Float)]
 getTopWords word wordToIndex loadedEmb dim numWords wordlst = top10Words
@@ -176,13 +153,13 @@ word2vec = do
 
   -- -- create word lst (unique)
   let wordLines = preprocess texts
-  let wordlst = take numWords $ concat wordLines
-  let wordToIndex = wordToIndexFactory $ nub wordlst
+      wordlst = take numWords $ concat wordLines
+      wordToIndex = wordToIndexFactory $ nub wordlst
   -- let indexesOfwordlst = map wordToIndex wordlst
 
   -- putStrLn "Finish creating embedding"
 
-  let trainingData = initDataSets wordLines wordlst
+      trainingData = initDataSets wordLines wordlst
 
   print $ "Training data size: " ++ show (Prelude.length trainingData)
 
@@ -228,21 +205,21 @@ word2vec = do
   let vectorDic :: [[Float]]
       vectorDic = asValue $ getOutputLayerWeights loadedEmb
 
-  let word1 = B.fromStrict $ pack "apps"
-  let top10Words1 = getTopWords word1 wordToIndex loadedEmb dim numWords wordlst
+      word1 = B.fromStrict $ pack "apps"
+      top10Words1 = getTopWords word1 wordToIndex loadedEmb dim numWords wordlst
 
-  let word2 = wordToIndex $ B.fromStrict $ pack "mcaffee"
-  let word3 = wordToIndex $ B.fromStrict $ pack "good"
-  let word4 = wordToIndex $ B.fromStrict $ pack "bad"
-  let word2minus3 = wordPlusWord (vectorDic !! word2) (vectorDic !! word3)
-  let word2minus3plus4 = wordPlusWord (wordMinusWord (vectorDic !! word2) (vectorDic !! word3)) (vectorDic !! word4)
-  let mostSimilarWords2minus3plus4 = lookForMostSimilarWords word2minus3 vectorDic wordlst
+      word2 = wordToIndex $ B.fromStrict $ pack "mcaffee"
+      word3 = wordToIndex $ B.fromStrict $ pack "good"
+      word4 = wordToIndex $ B.fromStrict $ pack "bad"
+      word2minus3 = wordPlusWord (vectorDic !! word2) (vectorDic !! word3)
+      word2minus3plus4 = wordPlusWord (wordMinusWord (vectorDic !! word2) (vectorDic !! word3)) (vectorDic !! word4)
+      mostSimilarWords2minus3plus4 = lookForMostSimilarWords word2minus3 vectorDic wordlst
 
   print $ "mcaffee + good : " ++ show mostSimilarWords2minus3plus4
 
   let wordIndex = wordToIndex word1
-  let wordVec = vectorDic !! wordIndex
-  let mostSimilarWords = lookForMostSimilarWords wordVec vectorDic wordlst
+      wordVec = vectorDic !! wordIndex
+      mostSimilarWords = lookForMostSimilarWords wordVec vectorDic wordlst
 
   print $ "Word: " ++ show word1
   print $ "Most similar words to " ++ show word1 ++ ": " ++ show mostSimilarWords
@@ -257,7 +234,7 @@ word2vec = do
   -- print $ "Accuracy: " ++ show accuracy
 
   where
-    numEpochs = 0 :: Int
+    numEpochs = 1 :: Int
     numWords = 2000 :: Int
     wordDim = 16 :: Int
 

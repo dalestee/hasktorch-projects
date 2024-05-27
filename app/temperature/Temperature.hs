@@ -15,7 +15,6 @@ import Torch.Control    (mapAccumM,foldLoop)
 import Torch.Layer.Linear (LinearHypParams(..),linearLayer)
 import ML.Exp.Chart (drawLearningCurve) --nlp-tools
 import Control.Monad (liftM)
-import System.IO.Unsafe (unsafePerformIO)
 import Data.List.Split (splitOn)
 
 
@@ -24,30 +23,35 @@ import Data.List.Split (splitOn)
 -- 2023/4/1,16.0
 
 -- takes 7 last days and predict the temperature of the next day
-parseData :: FilePath -> [([Float],Float)]
-parseData path = unsafePerformIO $ do
-    content <- readFile path
+parseData :: String -> [([Float],Float)]
+parseData content =
     let temps = map (read . last . splitOn ",") $ tail $ lines content
-    return [(take 7 (drop i temps), temps !! (i+7)) | i <- [0..(length temps - 8)]]
+    in [(take 7 (drop i temps), temps !! (i+7)) | i <- [0..(length temps - 8)]]
+
+readData :: FilePath -> IO [([Float],Float)]
+readData path = do
+    content <- readFile path
+    return $ parseData content
 
 -- temperature of the 7 last days to predict the temperature of the next day
-trainingData :: [([Float],Float)]
-trainingData = parseData "app/temperature/data/train.csv"
+trainingData :: IO [([Float],Float)]
+trainingData = readData "app/temperature/data/train.csv"
 
-testData :: [([Float],Float)]
-testData = parseData "app/temperature/data/valid.csv"
+testData :: IO [([Float],Float)]
+testData = readData "app/temperature/data/valid.csv"
 
 createModel :: Device -> LinearHypParams
 createModel device = LinearHypParams device True 7 1
 
 temperature :: IO()
 temperature = do
-    -- parse training data and print the first 5
+    
     print $ take 5 (parseData "app/temperature/data/valid.csv")
     print $ take 5 (parseData "app/temperature/data/train.csv")
     model <- initModel
+    trainingDataList <- trainingData
     ((trainedModel,_),losses) <- mapAccumM [1..numIters] (model,optimizer) $ \epoc (model,opt) -> do
-        let batchLoss = foldLoop trainingData zeroTensor $ \(input,output) loss ->
+        let batchLoss = foldLoop trainingDataList zeroTensor $ \(input,output) loss ->
                             let y' = linearLayer model $ asTensor'' device input
                                 y = asTensor'' device output
                             in add loss $ mseLoss y y'
