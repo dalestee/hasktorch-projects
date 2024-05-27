@@ -1,3 +1,6 @@
+-- Download the data create a data folder and put it inside.
+-- https://huggingface.co/datasets/McAuley-Lab/Amazon-Reviews-2023
+
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 module Rnn (rnn) where
 
