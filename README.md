@@ -130,8 +130,6 @@ Transformers are used today.
 
 use pre-trained models to train the model faster.
 
-compare rnn and lstm
-
 all the words that are not in the top 1000 words are considered as unknown words.
 
 add hasBias as a paramater in MLPHyperParams

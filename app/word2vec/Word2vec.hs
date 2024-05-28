@@ -5,7 +5,6 @@
 {-# OPTIONS_GHC -Wno-unused-local-binds #-}
 {-# OPTIONS_GHC -Wno-unused-matches #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# OPTIONS_GHC -Wno-unused-imports #-}
 
@@ -90,13 +89,17 @@ initDataSets :: [[B.ByteString]] -> [B.ByteString] -> [(Tensor, Tensor)]
 initDataSets wordLines wordlst = pairs
   where
       dictLength = Prelude.length wordlst
+      top1000Words = take dictLength $ sortByOccurence $ concat wordLines
       wordToIndex = wordToIndexFactory $ nub wordlst
       input = concatMap createInputPairs wordlst
       output = concatMap createOutputPairs wordlst
       pairs = zip input output
-      createInputPairs word = case getIndex wordlst word of
-        Just idx -> replicate 4 (oneHotEncode (wordToIndex word) dictLength)
-        Nothing -> []
+      createInputPairs word = 
+        if word `elem` top1000Words then
+            case getIndex wordlst word of
+                Just idx -> replicate 4 (oneHotEncode (wordToIndex word) dictLength)
+                Nothing -> []
+        else []
       createOutputPairs word = case getIndex wordlst word of
         Just idx -> map (\i -> if i >= 0 && i < Prelude.length wordlst then oneHotEncode (wordToIndex (wordlst !! i)) dictLength else zeros' [dictLength]) [idx - 1, idx + 1, idx - 2, idx + 2]
         Nothing -> []
@@ -122,10 +125,10 @@ initDataSets wordLines wordlst = pairs
 --       getIndex lst word = elemIndex word lst
 
 getTopWords :: B.ByteString -> (B.ByteString -> Int) -> MLPParams -> Dim -> Int -> [B.ByteString] -> [(B.ByteString, Float)]
-getTopWords word wordToIndex loadedEmb dim numWords wordlst = top10Words
+getTopWords word wordToIndex loadedEmb dim numWordsTotal wordlst = top10Words
   where
     wordIndex = wordToIndex word
-    input = oneHotEncode wordIndex numWords
+    input = oneHotEncode wordIndex numWordsTotal
     output = forward loadedEmb dim input
     wordOutputed = M.toList $ M.fromList $ zip wordlst (asValue output :: [Float])
     sortedWords = sortBy (comparing (Down . snd)) wordOutputed
@@ -176,7 +179,7 @@ word2vec = do
 
   -- -- create word lst (unique)
   let wordLines = preprocess texts
-  let wordlst = take numWords $ concat wordLines
+  let wordlst = take numWordsTotal $ concat wordLines
   let wordToIndex = wordToIndexFactory $ nub wordlst
   -- let indexesOfwordlst = map wordToIndex wordlst
 
@@ -222,31 +225,31 @@ word2vec = do
   -- Testing
   --------------------------------------------------------------------------------
 
-  -- load params
-  loadedEmb <- loadParams hyperParamsNoBias modelPath
+  -- -- load params
+  -- loadedEmb <- loadParams hyperParamsNoBias modelPath
 
-  let vectorDic :: [[Float]]
-      vectorDic = asValue $ getOutputLayerWeights loadedEmb
+  -- let vectorDic :: [[Float]]
+  --     vectorDic = asValue $ getOutputLayerWeights loadedEmb
 
-  let word1 = B.fromStrict $ pack "apps"
-  let top10Words1 = getTopWords word1 wordToIndex loadedEmb dim numWords wordlst
+  -- let word1 = B.fromStrict $ pack "apps"
+  -- let top10Words1 = getTopWords word1 wordToIndex loadedEmb dim numWordsTotal wordlst
 
-  let word2 = wordToIndex $ B.fromStrict $ pack "mcaffee"
-  let word3 = wordToIndex $ B.fromStrict $ pack "good"
-  let word4 = wordToIndex $ B.fromStrict $ pack "bad"
-  let word2minus3 = wordPlusWord (vectorDic !! word2) (vectorDic !! word3)
-  let word2minus3plus4 = wordPlusWord (wordMinusWord (vectorDic !! word2) (vectorDic !! word3)) (vectorDic !! word4)
-  let mostSimilarWords2minus3plus4 = lookForMostSimilarWords word2minus3 vectorDic wordlst
+  -- let word2 = wordToIndex $ B.fromStrict $ pack "mcaffee"
+  -- let word3 = wordToIndex $ B.fromStrict $ pack "good"
+  -- let word4 = wordToIndex $ B.fromStrict $ pack "bad"
+  -- let word2minus3 = wordPlusWord (vectorDic !! word2) (vectorDic !! word3)
+  -- let word2minus3plus4 = wordPlusWord (wordMinusWord (vectorDic !! word2) (vectorDic !! word3)) (vectorDic !! word4)
+  -- let mostSimilarWords2minus3plus4 = lookForMostSimilarWords word2minus3 vectorDic wordlst
 
-  print $ "mcaffee + good : " ++ show mostSimilarWords2minus3plus4
+  -- print $ "mcaffee + good : " ++ show mostSimilarWords2minus3plus4
 
-  let wordIndex = wordToIndex word1
-  let wordVec = vectorDic !! wordIndex
-  let mostSimilarWords = lookForMostSimilarWords wordVec vectorDic wordlst
+  -- let wordIndex = wordToIndex word1
+  -- let wordVec = vectorDic !! wordIndex
+  -- let mostSimilarWords = lookForMostSimilarWords wordVec vectorDic wordlst
 
-  print $ "Word: " ++ show word1
-  print $ "Most similar words to " ++ show word1 ++ ": " ++ show mostSimilarWords
-  -- print $ "Output: " ++ show top10Words1
+  -- print $ "Word: " ++ show word1
+  -- print $ "Most similar words to " ++ show word1 ++ ": " ++ show mostSimilarWords
+  -- -- print $ "Output: " ++ show top10Words1
 
   print "Finish"
 
@@ -257,8 +260,8 @@ word2vec = do
   -- print $ "Accuracy: " ++ show accuracy
 
   where
-    numEpochs = 0 :: Int
-    numWords = 2000 :: Int
+    numEpochs = 100 :: Int
+    numWordsTotal = 6000 :: Int
     wordDim = 16 :: Int
 
     textFilePath :: String
@@ -272,8 +275,8 @@ word2vec = do
     hyperParamsNoBias :: MLPHypParamsBiased
     hyperParamsNoBias = MLPHypParamsBiased {
       devBiased = device,
-      inputDimBiased = numWords,
-      layerSpecsBiased = [(wordDim, Relu, False), (numWords, Id, False)],
+      inputDimBiased = numWordsTotal,
+      layerSpecsBiased = [(wordDim, Relu, False), (numWordsTotal, Id, False)],
       firstLayerBias = False}
 
     -- betas are decaying factors Float, m's are the first and second moments [Tensor] and iter is the iteration number Int

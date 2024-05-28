@@ -17,5 +17,5 @@ main = do
         ["cifar"] -> cifar
         ["temperature"] -> temperature
         ["word2vec"] -> word2vec
-        ["rnn"] -> rnn
+        ["rnn"] -> rnnMain
         _ -> putStrLn "Usage: stack run <titanic|linear|cifar|temperature|word2vec|rnn>"
