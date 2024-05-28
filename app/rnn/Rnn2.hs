@@ -14,6 +14,7 @@ import Codec.Picture.Metadata (Value(Int))
 import Torch (DType(Float))
 import Torch.TensorFactories (zeros')
 
+
 loss :: RnnParams -> Tensor -> (Tensor, Tensor) -> Tensor
 loss model initialState (input, target) =
     let (output, _) = forward model initialState input
@@ -23,6 +24,17 @@ forward :: RnnParams -> Tensor -> Tensor -> (Tensor,Tensor) -- ^ an output of (<
 forward model initialState input = output
     where
         output = rnnLayers model Relu Nothing initialState input
+
+-- Function to generate a single data pair based on an index
+generateDataPair :: Int -> (Tensor, Tensor)
+generateDataPair i = 
+    let input = [[fromIntegral i + 2], [fromIntegral i + 1], [fromIntegral i]]
+        output = [[fromIntegral i-1]]
+    in (asTensor (input :: [[Float]]), asTensor (output :: [[Float]]))
+
+-- Function to create the training data up to a specified size
+createTrainingData :: Int -> [(Tensor, Tensor)]
+createTrainingData n = [generateDataPair i | i <- [0..(n-1)]]
 
 rnn2 :: IO ()
 rnn2 = do
@@ -42,11 +54,9 @@ rnn2 = do
     let (output1,_) = forward init initialState inputData
     putStrLn "Output before training"
     print output1
-    let trainingData = [(asTensor ([[2], [1], [0]] :: [[Float]]), asTensor ([[0]] :: [[Float]])),
-                        (asTensor ([[3], [2], [1]] :: [[Float]]), asTensor ([[1]] :: [[Float]])),
-                        (asTensor ([[4], [3], [2]] :: [[Float]]), asTensor ([[2]] :: [[Float]])),
-                        (asTensor ([[7], [6], [5]] :: [[Float]]), asTensor ([[5]] :: [[Float]]))] 
-                        :: [(Tensor, Tensor)]
+    let trainingData = createTrainingData 100
+
+    print $ take 1 trainingData
     
     let opt = mkAdam itr beta1 beta2 (flattenParameters init)
 
@@ -63,9 +73,6 @@ rnn2 = do
 
     print "Training done"
 
-    let inputData = asTensor ([[5], [4], [3]] :: [[Float]])
-
-
     let (output2,_) = forward trained initialState inputData
     putStrLn "Output after training"
     print output2
@@ -73,7 +80,7 @@ rnn2 = do
     print "Done!"
 
     where
-        numEpochs = 100 :: Int
+        numEpochs = 300 :: Int
 
         modelPath :: String
         modelPath =  "app/rnn/models/sample_model.pt"

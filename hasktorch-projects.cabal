@@ -40,6 +40,7 @@ library
       Temperature
       Word2vec
       Rnn
+      Rnn2
   other-modules:
       Paths_hasktorch_projects
   autogen-modules:
