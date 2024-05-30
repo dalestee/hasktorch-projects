@@ -45,7 +45,6 @@ import Data.Ord                                ( comparing, Down (Down) )
 import Torch.Typed                             ( TensorListFold(TensorListFold) )
 import Torch.Layer.Linear                      ( LinearParams(LinearParams) )
 
-
 isUnncessaryChar ::
   Word8 ->
   Bool
@@ -85,6 +84,9 @@ oneHotEncode index size = asTensor $ setAt index 1 (zeros :: [Float])
   where
     zeros = replicate size 0
 
+vecBinaryAddition :: Tensor -> Tensor -> Tensor
+vecBinaryAddition vec1 vec2 = vec1 + vec2
+
 initDataSets :: [[B.ByteString]] -> [B.ByteString] -> [(Tensor, Tensor)]
 initDataSets wordLines wordlst = pairs
   where
@@ -94,35 +96,15 @@ initDataSets wordLines wordlst = pairs
       input = concatMap createInputPairs wordlst
       output = concatMap createOutputPairs wordlst
       pairs = zip input output
-      createInputPairs word = 
+      createInputPairs word =
+        [oneHotEncode (wordToIndex word) dictLength | word `elem` top1000Words]
+      createOutputPairs word = 
         if word `elem` top1000Words then
-            case getIndex wordlst word of
-                Just idx -> replicate 4 (oneHotEncode (wordToIndex word) dictLength)
-                Nothing -> []
+          let indices = [wordToIndex word - 1, wordToIndex word + 1, wordToIndex word - 2, wordToIndex word + 2]
+              validIndices = filter (\i -> i >= 0 && i < Prelude.length wordlst) indices
+              vectors = map (\i -> oneHotEncode (wordToIndex (wordlst !! i)) dictLength) validIndices
+          in [foldl1 vecBinaryAddition vectors]
         else []
-      createOutputPairs word = case getIndex wordlst word of
-        Just idx -> map (\i -> if i >= 0 && i < Prelude.length wordlst then oneHotEncode (wordToIndex (wordlst !! i)) dictLength else zeros' [dictLength]) [idx - 1, idx + 1, idx - 2, idx + 2]
-        Nothing -> []
-      getIndex lst word = elemIndex word lst
-
--- only n+1
--- initDataSets :: [[B.ByteString]] -> [B.ByteString] -> [(Tensor, Tensor)]
--- initDataSets wordLines wordlst = pairs
---   where
---       dictLength = Prelude.length wordlst
---       wordToIndex = wordToIndexFactory $ nub wordlst
---       input = concatMap createInputPairs wordlst
---       output = concatMap createOutputPairs wordlst
---       pairs = zip input output
---       createInputPairs word = case getIndex wordlst word of
---         Just idx -> replicate 4 (oneHotEncode (wordToIndex word) dictLength)
---         Nothing -> []
---       createOutputPairs word = case getIndex wordlst word of
---         Just idx -> if idx + 1 >= 0 && idx + 1 < Prelude.length wordlst
---                     then [oneHotEncode (wordToIndex (wordlst !! (idx + 1))) dictLength]
---                     else []
---         Nothing -> []
---       getIndex lst word = elemIndex word lst
 
 getTopWords :: B.ByteString -> (B.ByteString -> Int) -> MLPParams -> Dim -> Int -> [B.ByteString] -> [(B.ByteString, Float)]
 getTopWords word wordToIndex loadedEmb dim numWordsTotal wordlst = top10Words
@@ -261,7 +243,7 @@ word2vec = do
 
   where
     numEpochs = 100 :: Int
-    numWordsTotal = 6000 :: Int
+    numWordsTotal = 1000 :: Int
     wordDim = 16 :: Int
 
     textFilePath :: String
