@@ -72,10 +72,7 @@ forward :: MLPParams -> Dim -> Tensor -> Tensor
 forward emb dim input = softmax dim output
     where
         output = mlpLayer emb input
-
-sortByOccurence :: [B.ByteString] -> [B.ByteString]
-sortByOccurence wordlst = reverse $ map fst $ sortOn snd $ M.toList $ M.fromListWith (+) [(w, 1) | w <- wordlst]
-
+        
 setAt :: Int -> a -> [a] -> [a]
 setAt idx val lst = take idx lst ++ [val] ++ drop (idx + 1) lst
 
@@ -224,8 +221,8 @@ word2vec = do
   print $ "apps + small : " ++ show mostSimilarWords2minus3plus4
 
   let wordIndex = wordToIndex word1
-  let wordVec = vectorDic !! wordIndex
-  let mostSimilarWords = lookForMostSimilarWords wordVec vectorDic wordlst
+      wordVec = vectorDic !! wordIndex
+      mostSimilarWords = lookForMostSimilarWords wordVec vectorDic wordlst
 
   print $ "Word: " ++ show word1
   print $ "Most similar words to " ++ show word1 ++ ": " ++ show mostSimilarWords
@@ -242,6 +239,7 @@ word2vec = do
   where
     numEpochs = 0 :: Int
     numWordsTotal = 6000 :: Int
+
     wordDim = 16 :: Int
 
     textFilePath :: String

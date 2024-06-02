@@ -34,14 +34,17 @@ import ML.Exp.Chart (drawLearningCurve) --nlp-tools
 --------------------------------------------------------------------------------
 
 -- Survived,Pclass,Sex,Age,SibSp,Parch,Fare,Embarked
-parseData :: IO ([([Float], Float)], [([Float], Float)])
-parseData = do
-    content <- readFile "app/titanic-mlp/data/train-mod.csv"
+parseData :: String -> IO [([Float], Float)]
+parseData filePath = do
+    content <- readFile filePath
     let lines' = tail $ lines content
-    let dataset = map (\line -> let fields = splitOn "," line in ([read (fields !! 1), read (fields !! 2), read (fields !! 3), read (fields !! 4), read (fields !! 5), read (fields !! 6), read (fields !! 7)], read (fields !! 0))) lines'
+    return $ map (\line -> let fields = map read (splitOn "," line) :: [Float] in
+        (tail fields, head fields)) lines'
+
+splitData :: [([Float], Float)] -> ([([Float], Float)], [([Float], Float)])
+splitData dataset = 
     let trainSize = round ((0.9 :: Double )* fromIntegral (length dataset)) :: Int
-    let (trainData, valData) = splitAt trainSize dataset
-    return (trainData, valData)
+    in splitAt trainSize dataset
 
 -- Pclass,Sex,Age,SibSp,Parch,Fare,Embarked
 parseDataTest :: [([Float], Int)]
@@ -60,23 +63,29 @@ arrayToCSV = unlines . map (\(a, b) -> show a ++ "," ++ show b)
 
 titanic :: IO ()
 titanic = do
+
+    fullTrainData <- parseData "app/titanic-mlp/data/train-mod.csv"
+    let (trainingData, validationData) = splitData fullTrainData
+    testData <- parseData "app/titanic-mlp/data/test-mod.csv"
+
     -- init <- sample hyperParams -- commented out because we are loading a pre-trained model
     init <- loadParams hyperParams "app/titanic-mlp/models/model-titanic-129.70596_Adam.pt" -- comment if you want to train from scratch
     let opt = mkAdam itr beta1 beta2 (flattenParameters init)
     -- let opt = GD
-    (trained, _, losses) <- foldLoop (init, opt, []) numIters $ \(model, optimizer, losses) i -> do
+    (trained, _, losses, valLosses) <- foldLoop (init, opt, [], []) numIters $ \(model, optimizer, losses, valLosses) i -> do
         let epochLoss = sum (map (loss model) trainingData)
+        let valLoss = sum (map (loss model) validationData)
         when (i `mod` 1 == 0) $ do
-            print i
-            print epochLoss
+            putStrLn $ "Epoch: " ++ show i
+            putStrLn $ "Epoch Loss: " ++ show epochLoss
+            putStrLn $ "Validation Loss: " ++ show valLoss
         (newState, newOpt) <- update model optimizer epochLoss lr
-        -- return (newState, newOpt, losses :: [Float]) -- without the losses curve
-        return (newState, newOpt, losses ++ [asValue epochLoss :: Float]) -- with the losses curve
+        return (newState, newOpt, losses ++ [asValue epochLoss :: Float], valLosses ++ [asValue valLoss :: Float])
 
-    let maybeLastLoss = if null losses then Nothing else Just (last losses)
-    case maybeLastLoss of
-        Nothing -> return ()
-        Just lastLoss -> do
+    case losses of
+        [] -> return ()
+        _  -> do
+            let lastLoss = last losses
             let filename = "app/titanic-mlp/curves/graph-titanic-mse" ++ show lastLoss ++ ".png"
             drawLearningCurve filename "Learning Curve" [("", losses)]
 
@@ -101,13 +110,13 @@ titanic = do
 
     -- test data
     let testData = parseDataTest
-    let outputs = map (\(input, passengerId) -> (passengerId, mlpLayer model (asTensor input))) testData
-    let outputs' = map (\(passengerId, output) -> (passengerId, if (asValue output :: Float) > 0.5 then 1 else 0)) outputs
+        outputs = map (\(input, passengerId) -> (passengerId, mlpLayer model (asTensor input))) testData
+        outputs' = map (\(passengerId, output) -> (passengerId, if (asValue output :: Float) > 0.5 then 1 else 0)) outputs
     writeFile "app/titanic-mlp/data/submission.csv" $ arrayToCSV outputs'
     return ()
 
     where
-        numIters = 0
+        numIters = 10
         device = Device CPU 0
         hyperParams = MLPHypParams device 7 [(21, Relu), (1, Id)]
         -- betas are decaying factors Float, m's are the first and second moments [Tensor] and iter is the iteration number Int
@@ -115,8 +124,6 @@ titanic = do
         beta1 = 0.9
         beta2 = 0.999
         lr = 1e-2
-        trainingData = unsafePerformIO $ fst <$> parseData
-        validationData = unsafePerformIO $ snd <$> parseData
 
 --------------------------------------------------------------------------------
 -- Validation

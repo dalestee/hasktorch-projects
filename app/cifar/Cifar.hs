@@ -72,10 +72,10 @@ prediction output = classes !! argmax (asValue output)
 evaluation :: MLPParams ->[(Tensor, Tensor)] -> IO()
 evaluation model dataset = do
     let newConfusionMatrix = confusionMatrix model dataset
-    let accuracy' = accuracy newConfusionMatrix
-    let f1MicroResult = f1Micro newConfusionMatrix
-    let f1MacroResult = f1Macro newConfusionMatrix
-    let f1WeightedResult = f1Weighted newConfusionMatrix
+        accuracy' = accuracy newConfusionMatrix
+        f1MicroResult = f1Micro newConfusionMatrix
+        f1MacroResult = f1Macro newConfusionMatrix
+        f1WeightedResult = f1Weighted newConfusionMatrix
     putStrLn $ "Accuracy: " ++ show accuracy'
     putStrLn $ "F1 Micro: " ++ show f1MicroResult
     putStrLn $ "F1 Macro: " ++ show f1MacroResult
@@ -86,11 +86,11 @@ cifar = do
     images <- loadImages 5000 "app/cifar/data/trainData"
     rImages <- randomizeData images
     let totalImages = length (take numImages rImages)
-    let numTrainingImages = totalImages * 90 `div` 100
-    let numValidationImages = totalImages - numTrainingImages
-    let (trainingRImages, validationRImages) = splitAt numTrainingImages rImages
-    let trainingData = map (\(label, img) -> (asTensor img, asTensor label)) trainingRImages
-    let validationData = map (\(label, img) -> (asTensor img, asTensor label)) validationRImages
+        numTrainingImages = totalImages * 90 `div` 100
+        numValidationImages = totalImages - numTrainingImages
+        (trainingRImages, validationRImages) = splitAt numTrainingImages rImages
+        trainingData = map (\(label, img) -> (asTensor img, asTensor label)) trainingRImages
+        validationData = map (\(label, img) -> (asTensor img, asTensor label)) validationRImages
     putStrLn $ "Training data size: " ++ show (length trainingData)
     init <- loadParams hyperParams "app/cifar/models/model-cifar-256x2563850.pt" -- comment if you want to train from scratch
     -- init <- sample hyperParams -- comment if you want to load a model
@@ -164,7 +164,7 @@ cifar = do
     -- write csvfile (id, prediction) ex: (1, cat) if the prediction is 3
 
     -- let outputs = map (\img -> (img, mlpLayer model (asTensor img))) imagesResults
-    -- let outputs' = zipWith (\id (_, output) -> (id, prediction output)) [1..] outputs
+    --     outputs' = zipWith (\id (_, output) -> (id, prediction output)) [1..] outputs
     
     -- putStrLn "Writing submission..."
     
