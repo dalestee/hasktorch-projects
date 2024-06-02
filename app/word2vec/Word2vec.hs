@@ -5,7 +5,6 @@
 {-# OPTIONS_GHC -Wno-unused-local-binds #-}
 {-# OPTIONS_GHC -Wno-unused-matches #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# OPTIONS_GHC -Wno-unused-imports #-}
 
@@ -82,27 +81,33 @@ oneHotEncode index size = asTensor $ setAt index 1 (zeros :: [Float])
   where
     zeros = replicate size 0
 
+vecBinaryAddition :: Tensor -> Tensor -> Tensor
+vecBinaryAddition vec1 vec2 = vec1 + vec2
+
 initDataSets :: [[B.ByteString]] -> [B.ByteString] -> [(Tensor, Tensor)]
 initDataSets wordLines wordlst = pairs
   where
       dictLength = Prelude.length wordlst
+      top1000Words = take dictLength $ sortByOccurence $ concat wordLines
       wordToIndex = wordToIndexFactory $ nub wordlst
       input = concatMap createInputPairs wordlst
       output = concatMap createOutputPairs wordlst
       pairs = zip input output
-      createInputPairs word = 
-        let idx = wordToIndex word 
-        in replicate 4 (oneHotEncode idx dictLength)
-
+      createInputPairs word =
+        [oneHotEncode (wordToIndex word) dictLength | word `elem` top1000Words]
       createOutputPairs word = 
-        let idx = wordToIndex word 
-        in map (\i -> if i >= 0 && i < Prelude.length wordlst then oneHotEncode (wordToIndex (wordlst !! i)) dictLength else zeros' [dictLength]) [idx - 1, idx + 1, idx - 2, idx + 2]
+        if word `elem` top1000Words then
+          let indices = [wordToIndex word - 1, wordToIndex word + 1, wordToIndex word - 2, wordToIndex word + 2]
+              validIndices = filter (\i -> i >= 0 && i < Prelude.length wordlst) indices
+              vectors = map (\i -> oneHotEncode (wordToIndex (wordlst !! i)) dictLength) validIndices
+          in [foldl1 vecBinaryAddition vectors]
+        else []
 
 getTopWords :: B.ByteString -> (B.ByteString -> Int) -> MLPParams -> Dim -> Int -> [B.ByteString] -> [(B.ByteString, Float)]
-getTopWords word wordToIndex loadedEmb dim numWords wordlst = top10Words
+getTopWords word wordToIndex loadedEmb dim numWordsTotal wordlst = top10Words
   where
     wordIndex = wordToIndex word
-    input = oneHotEncode wordIndex numWords
+    input = oneHotEncode wordIndex numWordsTotal
     output = forward loadedEmb dim input
     wordOutputed = M.toList $ M.fromList $ zip wordlst (asValue output :: [Float])
     sortedWords = sortBy (comparing (Down . snd)) wordOutputed
@@ -153,47 +158,47 @@ word2vec = do
 
   -- -- create word lst (unique)
   let wordLines = preprocess texts
-      wordlst = take numWords $ concat wordLines
-      wordToIndex = wordToIndexFactory $ nub wordlst
+  let wordlst = take numWordsTotal $ concat wordLines
+  let wordToIndex = wordToIndexFactory $ nub wordlst
   -- let indexesOfwordlst = map wordToIndex wordlst
 
   -- putStrLn "Finish creating embedding"
 
-      trainingData = initDataSets wordLines wordlst
+  -- let trainingData = initDataSets wordLines wordlst
 
-  print $ "Training data size: " ++ show (Prelude.length trainingData)
+  -- print $ "Training data size: " ++ show (Prelude.length trainingData)
 
   --------------------------------------------------------------------------------
   -- Training
   --------------------------------------------------------------------------------
 
-  -- initEmb <- loadParams hyperParamsNoBias "app/word2vec/models/sample_model.pt" -- comment if you want to train from scratch
-  initEmb <- sample hyperParamsNoBias -- comment if you want to load a model
-  -- initEmb' <- sample hyperParams
-  -- print $ "ParamsNoBias: " ++ show (flattenParameters initEmb)
-  -- putStrLn "\n"
-  -- print $ "ParamsBias: " ++ show (flattenParameters initEmb')
-  let opt = mkAdam itr beta1 beta2 (flattenParameters initEmb)
+  -- -- initEmb <- loadParams hyperParamsNoBias "app/word2vec/models/sample_model.pt" -- comment if you want to train from scratch
+  -- initEmb <- sample hyperParamsNoBias -- comment if you want to load a model
+  -- -- initEmb' <- sample hyperParams
+  -- -- print $ "ParamsNoBias: " ++ show (flattenParameters initEmb)
+  -- -- putStrLn "\n"
+  -- -- print $ "ParamsBias: " ++ show (flattenParameters initEmb')
+  -- let opt = mkAdam itr beta1 beta2 (flattenParameters initEmb)
 
-  putStrLn "Start training"
-  (trained, _, losses) <- foldLoop (initEmb, opt, []) numEpochs $ \(model, optimizer, losses) i -> do
-    let epochLoss = sum (map (loss model dim) trainingData)
-    when (i `mod` 1 == 0) $ do
-        print ("Epoch: " ++ show i ++ " | Loss: " ++ show (asValue epochLoss :: Float))
-    -- when (i `mod` 50 == 0) $ do
-    --     saveParams model (modelPath ++ "-" ++ show i ++ ".pt")
-    (newState, newOpt) <- update model optimizer epochLoss lr
-    return (newState, newOpt, losses :: [Float]) -- without the losses curve
-    -- return (newState, newOpt, losses ++ [asValue epochLoss :: Float]) -- with the losses curve
+  -- putStrLn "Start training"
+  -- (trained, _, losses) <- foldLoop (initEmb, opt, []) numEpochs $ \(model, optimizer, losses) i -> do
+  --   let epochLoss = sum (map (loss model dim) trainingData)
+  --   when (i `mod` 1 == 0) $ do
+  --       print ("Epoch: " ++ show i ++ " | Loss: " ++ show (asValue epochLoss :: Float))
+  --   -- when (i `mod` 50 == 0) $ do
+  --   --     saveParams model (modelPath ++ "-" ++ show i ++ ".pt")
+  --   (newState, newOpt) <- update model optimizer epochLoss lr
+  --   return (newState, newOpt, losses :: [Float]) -- without the losses curve
+  --   -- return (newState, newOpt, losses ++ [asValue epochLoss :: Float]) -- with the losses curve
 
 --------------------------------------------------------------------------------
   -- Saving
   --------------------------------------------------------------------------------
 
-  -- save params
-  saveParams trained modelPath
-  -- save word list
-  B.writeFile wordLstPath (B.intercalate (B.pack $ encode "\n") wordlst)
+  -- -- save params
+  -- saveParams trained modelPath
+  -- -- save word list
+  -- B.writeFile wordLstPath (B.intercalate (B.pack $ encode "\n") wordlst)
 
   --------------------------------------------------------------------------------
   -- Testing
@@ -205,17 +210,15 @@ word2vec = do
   let vectorDic :: [[Float]]
       vectorDic = asValue $ getOutputLayerWeights loadedEmb
 
-      word1 = B.fromStrict $ pack "apps"
-      top10Words1 = getTopWords word1 wordToIndex loadedEmb dim numWords wordlst
+  let word1 = B.fromStrict $ pack "apps"
+  let top10Words1 = getTopWords word1 wordToIndex loadedEmb dim numWordsTotal wordlst
 
-      word2 = wordToIndex $ B.fromStrict $ pack "mcaffee"
-      word3 = wordToIndex $ B.fromStrict $ pack "good"
-      word4 = wordToIndex $ B.fromStrict $ pack "bad"
-      word2minus3 = wordPlusWord (vectorDic !! word2) (vectorDic !! word3)
-      word2minus3plus4 = wordPlusWord (wordMinusWord (vectorDic !! word2) (vectorDic !! word3)) (vectorDic !! word4)
-      mostSimilarWords2minus3plus4 = lookForMostSimilarWords word2minus3 vectorDic wordlst
+  let word2 = wordToIndex $ B.fromStrict $ pack "apps"
+  let word3 = wordToIndex $ B.fromStrict $ pack "small"
+  let word2plus3 = wordPlusWord (vectorDic !! word2) (vectorDic !! word3)
+  let mostSimilarWords2minus3plus4 = lookForMostSimilarWords word2plus3 vectorDic wordlst
 
-  print $ "mcaffee + good : " ++ show mostSimilarWords2minus3plus4
+  print $ "apps + small : " ++ show mostSimilarWords2minus3plus4
 
   let wordIndex = wordToIndex word1
       wordVec = vectorDic !! wordIndex
@@ -234,14 +237,15 @@ word2vec = do
   -- print $ "Accuracy: " ++ show accuracy
 
   where
-    numEpochs = 1 :: Int
-    numWords = 2000 :: Int
+    numEpochs = 0 :: Int
+    numWordsTotal = 6000 :: Int
+
     wordDim = 16 :: Int
 
     textFilePath :: String
     textFilePath = "app/word2vec/data/review-texts.txt"
     modelPath :: String
-    modelPath =  "app/word2vec/models/sample_model.pt"
+    modelPath =  "app/word2vec/models/sample_model-dim16_num6000Better.pt"
     wordLstPath :: String
     wordLstPath = "app/word2vec/data/sample_wordlst.txt"
 
@@ -249,8 +253,8 @@ word2vec = do
     hyperParamsNoBias :: MLPHypParamsBiased
     hyperParamsNoBias = MLPHypParamsBiased {
       devBiased = device,
-      inputDimBiased = numWords,
-      layerSpecsBiased = [(wordDim, Relu, False), (numWords, Id, False)],
+      inputDimBiased = numWordsTotal,
+      layerSpecsBiased = [(wordDim, Relu, False), (numWordsTotal, Id, False)],
       firstLayerBias = False}
 
     -- betas are decaying factors Float, m's are the first and second moments [Tensor] and iter is the iteration number Int

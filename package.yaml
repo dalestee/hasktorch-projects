@@ -35,6 +35,7 @@ dependencies:
 - containers
 - utf8-string
 - hmatrix
+- aeson
 
 ghc-options:
 - -Wall

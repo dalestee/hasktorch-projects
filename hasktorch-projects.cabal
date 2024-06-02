@@ -40,6 +40,7 @@ library
       Temperature
       Word2vec
       Rnn
+      Rnn2
   other-modules:
       Paths_hasktorch_projects
   autogen-modules:
@@ -56,6 +57,7 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       JuicyPixels
+    , aeson
     , base >=4.7 && <5
     , bytestring
     , containers
@@ -83,6 +85,7 @@ executable hasktorch-projects-exe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       JuicyPixels
+    , aeson
     , base >=4.7 && <5
     , bytestring
     , containers
@@ -112,6 +115,7 @@ test-suite hasktorch-projects-test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       JuicyPixels
+    , aeson
     , base >=4.7 && <5
     , bytestring
     , containers

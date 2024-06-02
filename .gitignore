@@ -10,3 +10,5 @@ app/temperature/data/
 app/temperature/models/
 app/word2vec/data/
 app/word2vec/models/
+app/rnn/data/
+app/rnn/models/
