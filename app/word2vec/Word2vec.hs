@@ -167,71 +167,69 @@ word2vec = do
 
   -- putStrLn "Finish creating embedding"
 
-  let trainingData = initDataSets wordLines wordlst
+  -- let trainingData = initDataSets wordLines wordlst
 
-  print $ "Training data size: " ++ show (Prelude.length trainingData)
+  -- print $ "Training data size: " ++ show (Prelude.length trainingData)
 
   --------------------------------------------------------------------------------
   -- Training
   --------------------------------------------------------------------------------
 
-  -- initEmb <- loadParams hyperParamsNoBias "app/word2vec/models/sample_model.pt" -- comment if you want to train from scratch
-  initEmb <- sample hyperParamsNoBias -- comment if you want to load a model
-  -- initEmb' <- sample hyperParams
-  -- print $ "ParamsNoBias: " ++ show (flattenParameters initEmb)
-  -- putStrLn "\n"
-  -- print $ "ParamsBias: " ++ show (flattenParameters initEmb')
-  let opt = mkAdam itr beta1 beta2 (flattenParameters initEmb)
+  -- -- initEmb <- loadParams hyperParamsNoBias "app/word2vec/models/sample_model.pt" -- comment if you want to train from scratch
+  -- initEmb <- sample hyperParamsNoBias -- comment if you want to load a model
+  -- -- initEmb' <- sample hyperParams
+  -- -- print $ "ParamsNoBias: " ++ show (flattenParameters initEmb)
+  -- -- putStrLn "\n"
+  -- -- print $ "ParamsBias: " ++ show (flattenParameters initEmb')
+  -- let opt = mkAdam itr beta1 beta2 (flattenParameters initEmb)
 
-  putStrLn "Start training"
-  (trained, _, losses) <- foldLoop (initEmb, opt, []) numEpochs $ \(model, optimizer, losses) i -> do
-    let epochLoss = sum (map (loss model dim) trainingData)
-    when (i `mod` 1 == 0) $ do
-        print ("Epoch: " ++ show i ++ " | Loss: " ++ show (asValue epochLoss :: Float))
-    -- when (i `mod` 50 == 0) $ do
-    --     saveParams model (modelPath ++ "-" ++ show i ++ ".pt")
-    (newState, newOpt) <- update model optimizer epochLoss lr
-    return (newState, newOpt, losses :: [Float]) -- without the losses curve
-    -- return (newState, newOpt, losses ++ [asValue epochLoss :: Float]) -- with the losses curve
+  -- putStrLn "Start training"
+  -- (trained, _, losses) <- foldLoop (initEmb, opt, []) numEpochs $ \(model, optimizer, losses) i -> do
+  --   let epochLoss = sum (map (loss model dim) trainingData)
+  --   when (i `mod` 1 == 0) $ do
+  --       print ("Epoch: " ++ show i ++ " | Loss: " ++ show (asValue epochLoss :: Float))
+  --   -- when (i `mod` 50 == 0) $ do
+  --   --     saveParams model (modelPath ++ "-" ++ show i ++ ".pt")
+  --   (newState, newOpt) <- update model optimizer epochLoss lr
+  --   return (newState, newOpt, losses :: [Float]) -- without the losses curve
+  --   -- return (newState, newOpt, losses ++ [asValue epochLoss :: Float]) -- with the losses curve
 
 --------------------------------------------------------------------------------
   -- Saving
   --------------------------------------------------------------------------------
 
-  -- save params
-  saveParams trained modelPath
-  -- save word list
-  B.writeFile wordLstPath (B.intercalate (B.pack $ encode "\n") wordlst)
+  -- -- save params
+  -- saveParams trained modelPath
+  -- -- save word list
+  -- B.writeFile wordLstPath (B.intercalate (B.pack $ encode "\n") wordlst)
 
   --------------------------------------------------------------------------------
   -- Testing
   --------------------------------------------------------------------------------
 
-  -- -- load params
-  -- loadedEmb <- loadParams hyperParamsNoBias modelPath
+  -- load params
+  loadedEmb <- loadParams hyperParamsNoBias modelPath
 
-  -- let vectorDic :: [[Float]]
-  --     vectorDic = asValue $ getOutputLayerWeights loadedEmb
+  let vectorDic :: [[Float]]
+      vectorDic = asValue $ getOutputLayerWeights loadedEmb
 
-  -- let word1 = B.fromStrict $ pack "apps"
-  -- let top10Words1 = getTopWords word1 wordToIndex loadedEmb dim numWordsTotal wordlst
+  let word1 = B.fromStrict $ pack "apps"
+  let top10Words1 = getTopWords word1 wordToIndex loadedEmb dim numWordsTotal wordlst
 
-  -- let word2 = wordToIndex $ B.fromStrict $ pack "mcaffee"
-  -- let word3 = wordToIndex $ B.fromStrict $ pack "good"
-  -- let word4 = wordToIndex $ B.fromStrict $ pack "bad"
-  -- let word2minus3 = wordPlusWord (vectorDic !! word2) (vectorDic !! word3)
-  -- let word2minus3plus4 = wordPlusWord (wordMinusWord (vectorDic !! word2) (vectorDic !! word3)) (vectorDic !! word4)
-  -- let mostSimilarWords2minus3plus4 = lookForMostSimilarWords word2minus3 vectorDic wordlst
+  let word2 = wordToIndex $ B.fromStrict $ pack "apps"
+  let word3 = wordToIndex $ B.fromStrict $ pack "small"
+  let word2plus3 = wordPlusWord (vectorDic !! word2) (vectorDic !! word3)
+  let mostSimilarWords2minus3plus4 = lookForMostSimilarWords word2plus3 vectorDic wordlst
 
-  -- print $ "mcaffee + good : " ++ show mostSimilarWords2minus3plus4
+  print $ "apps + small : " ++ show mostSimilarWords2minus3plus4
 
-  -- let wordIndex = wordToIndex word1
-  -- let wordVec = vectorDic !! wordIndex
-  -- let mostSimilarWords = lookForMostSimilarWords wordVec vectorDic wordlst
+  let wordIndex = wordToIndex word1
+  let wordVec = vectorDic !! wordIndex
+  let mostSimilarWords = lookForMostSimilarWords wordVec vectorDic wordlst
 
-  -- print $ "Word: " ++ show word1
-  -- print $ "Most similar words to " ++ show word1 ++ ": " ++ show mostSimilarWords
-  -- -- print $ "Output: " ++ show top10Words1
+  print $ "Word: " ++ show word1
+  print $ "Most similar words to " ++ show word1 ++ ": " ++ show mostSimilarWords
+  -- print $ "Output: " ++ show top10Words1
 
   print "Finish"
 
@@ -242,14 +240,14 @@ word2vec = do
   -- print $ "Accuracy: " ++ show accuracy
 
   where
-    numEpochs = 100 :: Int
-    numWordsTotal = 1000 :: Int
+    numEpochs = 0 :: Int
+    numWordsTotal = 6000 :: Int
     wordDim = 16 :: Int
 
     textFilePath :: String
     textFilePath = "app/word2vec/data/review-texts.txt"
     modelPath :: String
-    modelPath =  "app/word2vec/models/sample_model.pt"
+    modelPath =  "app/word2vec/models/sample_model-dim16_num6000Better.pt"
     wordLstPath :: String
     wordLstPath = "app/word2vec/data/sample_wordlst.txt"
 

@@ -45,16 +45,7 @@ rnn2 = do
 
     print initialState
 
-    -- ^ an input tensor <seqLen,iDim> where seqLen is the sequence length and iDim is the input dimension
-    let inputData = asTensor ([[5], [4], [3]] :: [[Float]])
-
-    print $ shape initialState
-    print $ shape inputData
-
-    let (output1,_) = forward init initialState inputData
-    putStrLn "Output before training"
-    print output1
-    let trainingData = createTrainingData 100
+    let trainingData = createTrainingData 1000
 
     print $ take 1 trainingData
     
@@ -73,9 +64,12 @@ rnn2 = do
 
     print "Training done"
 
+    let inputData = asTensor ([[400], [399], [398]] :: [[Float]])
+
     let (output2,_) = forward trained initialState inputData
-    putStrLn "Output after training"
-    print output2
+    let lastValue = last . concat $ (asValue output2 :: [[Float]])
+
+    _ <- putStrLn ("output after training: " ++ show lastValue)
 
     print "Done!"
 
@@ -86,7 +80,7 @@ rnn2 = do
         modelPath =  "app/rnn/models/sample_model.pt"
 
         numLayers = 1
-        hDim = 2
+        hDim = 1
         iDim = 1
 
         hyperParams :: RnnHypParams
@@ -105,5 +99,4 @@ rnn2 = do
         beta2 = 0.999 :: Float
         lr = 1e-1 :: Tensor
         dim = Dim 0 :: Dim
-
         initialState = zeros' [numLayers, hDim] :: Tensor

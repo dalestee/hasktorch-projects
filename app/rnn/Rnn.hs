@@ -1,20 +1,98 @@
--- Download the data create a data folder and put it inside.
--- https://huggingface.co/datasets/McAuley-Lab/Amazon-Reviews-2023
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use newtype instead of data" #-}
 
-{-# OPTIONS_GHC -Wno-name-shadowing #-}
-module Rnn (rnn) where
 
+module Rnn (rnnMain) where
+  
+import Codec.Binary.UTF8.String (encode) -- add utf8-string to dependencies in package.yaml
+import Data.Aeson (FromJSON(..), ToJSON(..), eitherDecode)
+import qualified Data.ByteString.Lazy as B
+import qualified Data.ByteString.Internal as B (c2w)
+import GHC.Generics
+import Torch.NN (Parameter, Parameterized(..), Randomizable(..))
+import Torch.Serialize (loadParams)
+import Torch.TensorFactories (randnIO')
+import Torch.Autograd (makeIndependent)
 import Torch.Layer.RNN      (RnnHypParams(..), RnnParams(..), rnnLayers)
-import Torch.Tensor         (Tensor(..), asValue, asTensor, TensorLike (asTensor), shape)
-import Torch.Functional     (Dim(..), mseLoss)
-import Torch.Device         (Device(..), DeviceType (CPU))
-import Torch.NN             (sample, flattenParameters)
 import Torch.Optim          (mkAdam, foldLoop)
-import Torch.Train          (loadParams, update, saveParams)
+import Torch.Train          (update, saveParams)
+import Torch.Functional     (mseLoss, Dim(..))
+import Torch.Tensor         (Tensor(..), asValue, asTensor, TensorLike (asTensor), shape)
+import Torch.TensorFactories (zeros')
+import Torch.Device         (Device(..), DeviceType (CPU))
 import Torch.Layer.MLP      (ActName(Relu, Tanh))
-import Control.Monad        (when)
-import Codec.Picture.Metadata (Value(Int))
-import Torch (DType(Float))
+
+sizeInput = 1
+sizeHidden = 6
+nLayers = 2
+
+-- amazon review data
+data Image = Image {
+  small_image_url :: String,
+  medium_image_url :: String,
+  large_image_url :: String
+} deriving (Show, Generic)
+
+instance FromJSON Image
+instance ToJSON Image
+
+data AmazonReview = AmazonReview {
+  rating :: Float,
+  title :: String,
+  text :: String,
+  images :: [Image],
+  asin :: String,
+  parent_asin :: String,
+  user_id :: String,
+  timestamp :: Int,
+  verified_purchase :: Bool,
+  helpful_vote :: Int
+  } deriving (Show, Generic)
+
+instance FromJSON AmazonReview
+instance ToJSON AmazonReview
+
+-- model
+data ModelSpec = ModelSpec {
+  wordNum :: Int, -- the number of words
+  wordDim :: Int  -- the dimention of word embeddings
+} deriving (Show, Eq, Generic)
+
+data Embedding = Embedding {
+    wordEmbedding :: Parameter
+  } deriving (Show, Generic, Parameterized)
+
+
+data RNN = RNN {
+  rnnParams :: RnnParams
+} deriving (Show, Generic, Parameterized)
+
+data Model = Model {
+  emb :: Embedding,
+  rnn :: RnnParams
+} deriving (Show, Generic, Parameterized)
+
+instance
+  Randomizable
+    ModelSpec
+    Model
+  where
+    sample ModelSpec {..} =
+        (Model . Embedding <$> (makeIndependent =<< randnIO' [wordDim, wordNum]))
+        -- TODO: add RNN initilization
+        <*> sample (RnnHypParams {
+          dev = Device CPU 0,
+          bidirectional = False, -- ^ True if BiLSTM, False otherwise
+          inputSize = sizeInput, -- ^ The number of expected features in the input x
+          hiddenSize = sizeHidden, -- ^ The number of features in the hidden state h
+          numLayers = nLayers, -- ^ Number of recurrent layers
+          hasBias = True -- ^ If False, then the layer does not use bias weights b_ih and b_hh. Default: True
+        })
 
 loss :: RnnParams -> Tensor -> (Tensor, Tensor) -> Tensor
 loss model initialState (input, target) =
@@ -26,78 +104,78 @@ forward model initialState input = output
     where
         output = rnnLayers model Relu Nothing initialState input
 
-rnn :: IO ()
-rnn = do
-    putStrLn "Rnn"
+-- randomize and initialize embedding with loaded params
+initialize ::
+  ModelSpec ->
+  FilePath ->
+  IO Model
+initialize modelSpec embPath = do
+  randomizedModel <- sample modelSpec
+  loadedEmb <- loadParams (emb randomizedModel) embPath
+  return Model {emb = loadedEmb , rnn = rnn randomizedModel}
 
-    -- init <- loadParams hyperParams modelPath -- comment if you want to sample a model
-    init <- sample hyperParams -- comment if you want to load a model
+-- your amazon review json
+amazonReviewPath :: FilePath
+amazonReviewPath = "app/rnn/data/train.jsonl"
 
-    let initialState = asTensor $ replicate 1 [1 * numLayers, hDim]
-    print initialState
+outputPath :: FilePath
+outputPath = "app/rnn/data/review-texts.txt"
 
-    -- ^ an input tensor <seqLen,iDim> where seqLen is the sequence length and iDim is the input dimension
-    let inputData = asTensor ([[5], [4], [3]] :: [[Float]])
+embeddingPath =  "app/rnn/models/sample_model_dim16_num6000.pt"
 
-    print $ shape initialState
-    print $ shape inputData
+wordLstPath = "app/rnn/data/sample_wordlst.txt"
 
-    let (output1,_) = forward init initialState inputData
-    putStrLn "Output before training"
-    print output1
-    let trainingData = [(asTensor ([[2], [1], [0]] :: [[Float]]), asTensor ([[0]] :: [[Float]])),
-                        (asTensor ([[3], [2], [1]] :: [[Float]]), asTensor ([[1]] :: [[Float]])),
-                        (asTensor ([[4], [3], [2]] :: [[Float]]), asTensor ([[2]] :: [[Float]])),
-                        (asTensor ([[7], [6], [5]] :: [[Float]]), asTensor ([[5]] :: [[Float]]))] 
-                        :: [(Tensor, Tensor)]
-    
-    let opt = mkAdam itr beta1 beta2 (flattenParameters init)
+decodeToAmazonReview ::
+  B.ByteString ->
+  Either String [AmazonReview]
+decodeToAmazonReview jsonl =
+  let jsonList = B.split (B.c2w '\n') jsonl
+  in sequenceA $ map eitherDecode jsonList
 
-    putStrLn "Start training"
-    (trained, _, losses) <- foldLoop (init, opt, []) numEpochs $ \(model, optimizer, losses) i -> do
-        let epochLoss = sum (map (loss model initialState) trainingData)
-        when (i `mod` 1 == 0) $ do
-            print ("Epoch: " ++ show i ++ " | Loss: " ++ show (asValue epochLoss :: Float))
-        -- when (i `mod` 50 == 0) $ do
-        --     saveParams model (modelPath ++ "-" ++ show i ++ ".pt")
-        (newState, newOpt) <- update model optimizer epochLoss lr
-        return (newState, newOpt, losses :: [Float]) -- without the losses curve
-        -- return (newState, newOpt, losses ++ [asValue epochLoss :: Float]) -- with the losses curve
+rnnMain :: IO ()
+rnnMain = do
+  jsonl <- B.readFile amazonReviewPath
+  let amazonReviews = decodeToAmazonReview jsonl
+  let reviews = case amazonReviews of
+                  Left err -> []
+                  Right reviews -> reviews
 
-    print "Training done"
+  -- load word list (It's important to use the same list as whan creating embeddings)
+  wordLst <- fmap (B.split (head $ encode "\n")) (B.readFile wordLstPath)
 
-    let inputData = asTensor ([[5], [4], [3]] :: [[Float]])
+  -- load params (set　wordDim　and wordNum same as session5)
+  let modelSpec = ModelSpec {
+    wordDim = 16,
+    wordNum = 6000
+  }
+  initModel <- initialize modelSpec embeddingPath
 
+  print initModel
+  print $ head reviews
+  return ()
+  where
+    numEpochs = 300 :: Int
 
-    let (output2,_) = forward trained initialState inputData
-    putStrLn "Output after training"
-    print output2
+    modelPath :: String
+    modelPath =  "app/rnn/models/sample_model.pt"
 
-    print "Done!"
+    numLayers = 2
+    hDim = 6
+    iDim = 1
 
-    where
-        numEpochs = 100 :: Int
+    hyperParams :: RnnHypParams
+    hyperParams = RnnHypParams {
+        dev = Device CPU 0,
+        bidirectional = False, -- ^ True if BiLSTM, False otherwise
+        inputSize = iDim, -- ^ The number of expected features in the input x
+        hiddenSize = hDim, -- ^ The number of features in the hidden state h
+        numLayers = numLayers, -- ^ Number of recurrent layers
+        hasBias = True -- ^ If False, then the layer does not use bias weights b_ih and b_hh. Default: True
+    }
 
-        modelPath :: String
-        modelPath =  "app/rnn/models/sample_model.pt"
-
-        numLayers = 1
-        hDim = 2
-        iDim = 1
-
-        hyperParams :: RnnHypParams
-        hyperParams = RnnHypParams {
-            dev = Device CPU 0,
-            bidirectional = False, -- ^ True if BiLSTM, False otherwise
-            inputSize = iDim, -- ^ The number of expected features in the input x
-            hiddenSize = hDim, -- ^ The number of features in the hidden state h
-            numLayers = numLayers, -- ^ Number of recurrent layers
-            hasBias = True -- ^ If False, then the layer does not use bias weights b_ih and b_hh. Default: True
-        }
-
-        -- betas are decaying factors Float, m's are the first and second moments [Tensor] and iter is the iteration number Int
-        itr = 0 :: Int
-        beta1 = 0.9 :: Float
-        beta2 = 0.999 :: Float
-        lr = 1e-1 :: Tensor
-        dim = Dim 0 :: Dim
+    -- betas are decaying factors Float, m's are the first and second moments [Tensor] and iter is the iteration number Int
+    itr = 0 :: Int
+    beta1 = 0.9 :: Float
+    beta2 = 0.999 :: Float
+    lr = 1e-1 :: Tensor
+    dim = Dim 0 :: Dim
