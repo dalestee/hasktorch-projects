@@ -8,7 +8,7 @@
 
 
 module Rnn (rnnMain) where
-  
+
 import Codec.Binary.UTF8.String (encode) -- add utf8-string to dependencies in package.yaml
 import Data.Aeson (FromJSON(..), ToJSON(..), eitherDecode)
 import qualified Data.ByteString.Lazy as B
@@ -16,14 +16,13 @@ import qualified Data.ByteString.Internal as B (c2w)
 import GHC.Generics
 import Torch.NN (Parameter, Parameterized(..), Randomizable(..))
 import Torch.Serialize (loadParams)
-import Torch.TensorFactories (randnIO')
+import Torch.TensorFactories ( randnIO', zeros' )
 import Torch.Autograd (makeIndependent)
 import Torch.Layer.RNN      (RnnHypParams(..), RnnParams(..), rnnLayers)
 import Torch.Optim          (mkAdam, foldLoop)
 import Torch.Train          (update, saveParams)
 import Torch.Functional     (mseLoss, Dim(..))
 import Torch.Tensor         (Tensor(..), asValue, asTensor, TensorLike (asTensor), shape)
-import Torch.TensorFactories (zeros')
 import Torch.Device         (Device(..), DeviceType (CPU))
 import Torch.Layer.MLP      (ActName(Relu, Tanh))
 
