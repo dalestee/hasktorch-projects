@@ -81,6 +81,12 @@ evaluation model dataset = do
     putStrLn $ "F1 Macro: " ++ show f1MacroResult
     putStrLn $ "F1 Weighted: " ++ show f1WeightedResult
 
+labelToClass :: [Float] -> String
+labelToClass label = classes !! argmax label
+    where
+        classes = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
+
+
 cifar :: IO ()
 cifar = do
     images <- loadImages 5000 "app/cifar/data/trainData"
@@ -171,6 +177,19 @@ cifar = do
     -- writeFile "app/cifar/data/submission.csv" $ unlines $ map (\(img, output) -> show img ++ "," ++ output) outputs'
 
     -- putStrLn "Done."
+
+--------------------------------------------------------------------------------
+-- one image prediction
+--------------------------------------------------------------------------------
+
+    putStrLn "One image prediction"
+
+    let (label, img) = head images
+        output = mlpLayer trained (asTensor img)
+
+    putStrLn $ "Prediction: " ++ prediction output
+    let label' = labelToClass label
+    putStrLn $ "Label: " ++ label'
 
     where
         numEpochs = 0 :: Int
