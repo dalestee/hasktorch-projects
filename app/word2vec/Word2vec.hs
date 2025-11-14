@@ -84,6 +84,9 @@ oneHotEncode index size = asTensor $ setAt index 1 (zeros :: [Float])
 vecBinaryAddition :: Tensor -> Tensor -> Tensor
 vecBinaryAddition vec1 vec2 = vec1 + vec2
 
+sortByOccurence :: [B.ByteString] -> [B.ByteString]
+sortByOccurence = map fst . sortOn snd . M.toList . M.fromListWith (+) . flip zip (repeat 1)
+
 initDataSets :: [[B.ByteString]] -> [B.ByteString] -> [(Tensor, Tensor)]
 initDataSets wordLines wordlst = pairs
   where
@@ -210,15 +213,17 @@ word2vec = do
   let vectorDic :: [[Float]]
       vectorDic = asValue $ getOutputLayerWeights loadedEmb
 
-  let word1 = B.fromStrict $ pack "apps"
+  let word1 = B.fromStrict $ pack "mcafee"
   let top10Words1 = getTopWords word1 wordToIndex loadedEmb dim numWordsTotal wordlst
 
-  let word2 = wordToIndex $ B.fromStrict $ pack "apps"
-  let word3 = wordToIndex $ B.fromStrict $ pack "small"
-  let word2plus3 = wordPlusWord (vectorDic !! word2) (vectorDic !! word3)
-  let mostSimilarWords2minus3plus4 = lookForMostSimilarWords word2plus3 vectorDic wordlst
+  let word2 = wordToIndex $ B.fromStrict $ pack "mcafee"
+  let word3 = wordToIndex $ B.fromStrict $ pack "good"
+  let word4 = wordToIndex $ B.fromStrict $ pack "bad"
+  let word2minus4 = wordMinusWord (vectorDic !! word2) (vectorDic !! word3)
+  let word2minus4plus3 = wordPlusWord word2minus4 (vectorDic !! word4)
+  let mostSimilarWords2minus3plus4 = lookForMostSimilarWords word2minus4plus3 vectorDic wordlst
 
-  print $ "apps + small : " ++ show mostSimilarWords2minus3plus4
+  print $ "(mcafee-bad) + good : " ++ show mostSimilarWords2minus3plus4
 
   let wordIndex = wordToIndex word1
       wordVec = vectorDic !! wordIndex
