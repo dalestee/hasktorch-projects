@@ -135,3 +135,5 @@ all the words that are not in the top 1000 words are considered as unknown words
 add hasBias as a paramater in MLPHyperParams
 
 to input multiple words in word2vec model make a onehotvector like w1 = [0,1,0], w2 = [1,0,0] and make w1 + w2 = [1,1,0]
+
+create issue for the saving
